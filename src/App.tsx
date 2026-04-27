@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import CourseView from './pages/CourseView';
 import TestView from './pages/TestView';
@@ -28,7 +29,7 @@ function AdminRoute({ children }: { children: ReactNode }) {
 
 function MainRoutes() {
   const location = useLocation();
-  const isAuthPage = ['/login'].includes(location.pathname);
+  const isAuthPage = ['/login', '/register'].includes(location.pathname);
   const isHomePage = location.pathname === '/';
 
   return (
@@ -38,6 +39,7 @@ function MainRoutes() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           
           <Route path="/dashboard" element={<PrivateRoute title="Дашборд"><Dashboard /></PrivateRoute>} />
           <Route path="/subscriptions" element={<PrivateRoute title="Тарифные планы"><Subscriptions /></PrivateRoute>} />

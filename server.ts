@@ -25,56 +25,69 @@ async function startServer() {
   
   // --- SEED DATA (Firestore version) ---
   const seed = async () => {
-    const coursesSnap = await db.collection('courses').limit(1).get();
-    if (coursesSnap.empty) {
-      console.log('Seeding initial data to Firestore...');
-      
-      const course1Ref = await db.collection('courses').add({
-        title: 'Математика НИШ: Базовый уровень',
-        description: 'Полный курс по математике для подготовки к поступлению в 7 класс НИШ.',
-        subject: 'Математика',
-        teacher_id: 'system'
-      });
-      
-      const lesson1Ref = await db.collection('courses').doc(course1Ref.id).collection('lessons').add({
-        title: 'Логические задачи и множества',
-        video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-        order_index: 1,
-        course_id: course1Ref.id
-      });
+    try {
+      // Check for a specific course to avoid duplicates even if multiple instances start
+      const existingSnap = await db.collection('courses')
+        .where('title', '==', 'Математика НИШ: Базовый уровень')
+        .limit(1)
+        .get();
 
-      await db.collection('courses').doc(course1Ref.id).collection('lessons').doc(lesson1Ref.id).collection('tasks').add({
-        question: 'Если в корзине 5 яблок и вы забрали 3, сколько яблок у вас осталось?',
-        option_a: '2',
-        option_b: '3',
-        option_c: '5',
-        option_d: '8',
-        correct_answer: 'B',
-        explanation: 'Вы забрали 3 яблока, значит у вас 3 яблока.'
-      });
+      if (existingSnap.empty) {
+        console.log('Seeding initial data to Firestore...');
+        
+        const course1Ref = await db.collection('courses').add({
+          title: 'Математика НИШ: Базовый уровень',
+          description: 'Полный курс по математике для подготовки к поступлению в 7 класс НИШ.',
+          subject: 'Математика',
+          teacher_id: 'system',
+          created_at: admin.firestore.FieldValue.serverTimestamp()
+        });
+        
+        const lesson1Ref = await db.collection('courses').doc(course1Ref.id).collection('lessons').add({
+          title: 'Логические задачи и множества',
+          video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+          order_index: 1,
+          course_id: course1Ref.id
+        });
 
-      await db.collection('courses').add({
-        title: 'Критическое мышление и Логика',
-        description: 'Развитие аналитических навыков для решения IQ тестов.',
-        subject: 'Логика',
-        teacher_id: 'system'
-      });
+        await db.collection('courses').doc(course1Ref.id).collection('lessons').doc(lesson1Ref.id).collection('tasks').add({
+          question: 'Если в корзине 5 яблок и вы забрали 3, сколько яблок у вас осталось?',
+          option_a: '2',
+          option_b: '3',
+          option_c: '5',
+          option_d: '8',
+          correct_answer: 'B',
+          explanation: 'Вы забрали 3 яблока, значит у вас 3 яблока.'
+        });
 
-      await db.collection('courses').add({
-        title: 'Английский язык: Reading & Grammar',
-        description: 'Подготовка к секции English для поступления в 7 класс.',
-        subject: 'Английский язык',
-        teacher_id: 'system'
-      });
+        await db.collection('courses').add({
+          title: 'Критическое мышление и Логика',
+          description: 'Развитие аналитических навыков для решения IQ тестов.',
+          subject: 'Логика',
+          teacher_id: 'system',
+          created_at: admin.firestore.FieldValue.serverTimestamp()
+        });
 
-      await db.collection('courses').add({
-        title: 'Қазақ тілі мен әдебиеті',
-        description: 'Мәтінмен жұмыс және грамматикалық талдау.',
-        subject: 'Казахский язык',
-        teacher_id: 'system'
-      });
-      
-      console.log('Seed complete.');
+        await db.collection('courses').add({
+          title: 'Английский язык: Reading & Grammar',
+          description: 'Подготовка к секции English для поступления в 7 класс.',
+          subject: 'Английский язык',
+          teacher_id: 'system',
+          created_at: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        await db.collection('courses').add({
+          title: 'Қазақ тілі мен әдебиеті',
+          description: 'Мәтінмен жұмыс және грамматикалық талдау.',
+          subject: 'Казахский язык',
+          teacher_id: 'system',
+          created_at: admin.firestore.FieldValue.serverTimestamp()
+        });
+        
+        console.log('Seed complete.');
+      }
+    } catch (err) {
+      console.error('Seed ERROR:', err);
     }
   };
   await seed();
@@ -91,8 +104,9 @@ async function startServer() {
         const decodedToken = await admin.auth().verifyIdToken(token);
         req.user = decodedToken;
         next();
-      } catch (err) {
-        res.status(403).json({ error: 'Unauthorized' });
+      } catch (err: any) {
+        console.error('AUTH ERROR (403):', err.message);
+        res.status(403).json({ error: 'Unauthorized', details: err.message });
       }
     } else {
       res.sendStatus(401);

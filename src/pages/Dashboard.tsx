@@ -19,7 +19,15 @@ export default function Dashboard() {
   const subjectFilter = searchParams.get('subject');
 
   useEffect(() => {
-    api.get('/courses').then(res => setCourses(res.data));
+    api.get('/courses').then(res => {
+      // Ensure unique courses by ID
+      const uniqueCourses = res.data.reduce((acc: Course[], current: Course) => {
+        const x = acc.find(item => item.id === current.id);
+        if (!x) return acc.concat([current]);
+        return acc;
+      }, []);
+      setCourses(uniqueCourses);
+    });
   }, []);
 
   const filteredCourses = useMemo(() => {

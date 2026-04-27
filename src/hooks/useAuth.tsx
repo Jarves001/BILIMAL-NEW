@@ -4,6 +4,9 @@ import {
   signInWithPopup, 
   GoogleAuthProvider, 
   signOut,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
   User as FirebaseUser
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
@@ -27,6 +30,8 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loginWithGoogle: () => Promise<void>;
+  registerEmail: (email: string, password: string, name: string) => Promise<void>;
+  loginEmail: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
 }
@@ -76,8 +81,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               name: newUser.name,
               email: newUser.email,
               role: newUser.role,
-              subscriptionStatus: 'inactive',
-              createdAt: new Date().toISOString()
+              subscription_status: 'inactive',
+              created_at: new Date().toISOString()
             });
             
             setUser(newUser);
@@ -100,12 +105,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signInWithPopup(auth, provider);
   };
 
+  const registerEmail = async (email: string, password: string, name: string) => {
+    const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(firebaseUser, { displayName: name });
+    // Firestore profile creation is handled by the useEffect observer
+  };
+
+  const loginEmail = async (email: string, password: string) => {
+    await signInWithEmailAndPassword(auth, email, password);
+  };
+
   const logout = async () => {
     await signOut(auth);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loginWithGoogle, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, loginWithGoogle, registerEmail, loginEmail, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

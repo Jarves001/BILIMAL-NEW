@@ -31,7 +31,8 @@ export default function Navbar() {
             
             {!user ? (
               <div className="flex items-center space-x-4">
-                <Link to="/login" className="bg-accent text-primary px-4 py-2 rounded font-semibold hover:bg-opacity-90 transition-all">Начать обучение</Link>
+                <Link to="/login" className="hover:text-accent transition-colors font-medium">Войти</Link>
+                <Link to="/register" className="bg-accent text-primary px-4 py-2 rounded font-semibold hover:bg-opacity-90 transition-all">Регистрация</Link>
               </div>
             ) : (
               <div className="flex items-center space-x-4 border-l border-gray-700 pl-4">
