@@ -23,6 +23,12 @@ export default function Register() {
       return;
     }
 
+    if (!email.toLowerCase().endsWith('@gmail.com')) {
+      setError('Пожалуйста, используйте Gmail (example@gmail.com)');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       await registerEmail(email, password, name);
       navigate('/dashboard');

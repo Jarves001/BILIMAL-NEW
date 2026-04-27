@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/client';
+import { db } from '../lib/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
-import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX } from 'lucide-react';
+import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX, Trophy, Target } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface Course {
@@ -17,16 +19,57 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const subjectFilter = searchParams.get('subject');
+  
+  const [userStats, setUserStats] = useState({
+    totalScore: 0,
+    lessonsCompleted: 0,
+    readiness: 0,
+  });
 
   useEffect(() => {
+    if (!user) return;
+
+    // Fetch user results for stats
+    async function fetchStats() {
+      try {
+        const q = query(collection(db, 'results'), where('user_id', '==', user?.id));
+        const snap = await getDocs(q);
+        const results = snap.docs.map(d => d.data());
+        
+        const total = results.reduce((acc, r) => acc + (r.score || 0), 0);
+        const accuracy = results.length > 0 
+          ? (results.reduce((acc, curr) => acc + (curr.score / curr.total_questions), 0) / results.length) * 100
+          : 0;
+
+        setUserStats({
+          totalScore: total,
+          lessonsCompleted: results.length,
+          readiness: Math.round(accuracy)
+        });
+      } catch (err) {
+        console.error('Failed to fetch stats:', err);
+      }
+    }
+
+    fetchStats();
+    
     api.get('/courses').then(res => {
-      // Ensure unique courses by ID
-      const uniqueCourses = res.data.reduce((acc: Course[], current: Course) => {
-        const x = acc.find(item => item.id === current.id);
-        if (!x) return acc.concat([current]);
+      // Ensure unique courses by ID and filter out any invalid data
+      const rawCourses = Array.isArray(res.data) ? res.data : [];
+      const uniqueCourses = rawCourses.reduce((acc: Course[], current: any) => {
+        if (!current.id) return acc;
+        const exists = acc.find(item => item.id === current.id);
+        if (!exists) return acc.concat([current as Course]);
         return acc;
       }, []);
+      
+      if (uniqueCourses.length < rawCourses.length) {
+        console.warn(`Filtered out ${rawCourses.length - uniqueCourses.length} duplicate courses`);
+      }
+      
       setCourses(uniqueCourses);
+    }).catch(err => {
+      console.error('Failed to fetch courses:', err);
     });
   }, []);
 
@@ -39,26 +82,44 @@ export default function Dashboard() {
     switch(subjectFilter?.toLowerCase()) {
       case 'math': return 'Математика';
       case 'logic': return 'Логика & IQ';
-      case 'lang': return 'Анализ текста';
+      case 'languages': return 'Языки';
+      case 'reading': return 'Анализ текста';
       default: return 'Все курсы';
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20 md:pb-0">
+      {/* Level Header (Mobile Focused) */}
+      <div className="md:hidden bg-primary text-white p-6 rounded-3xl mb-4 relative overflow-hidden">
+        <div className="relative z-10">
+          <p className="text-[10px] font-bold text-accent uppercase tracking-widest">Уровень {Math.floor(userStats.totalScore / 100) + 1}</p>
+          <h2 className="text-2xl font-black">{user?.name}</h2>
+          <div className="w-full bg-white/10 h-2 mt-4 rounded-full overflow-hidden">
+             <div className="bg-accent h-full shadow-[0_0_10px_rgba(255,255,255,0.5)]" style={{ width: `${userStats.totalScore % 100}%` }}></div>
+          </div>
+          <p className="text-[10px] text-white/50 mt-2 uppercase font-bold tracking-tighter">
+            {100 - (userStats.totalScore % 100)} XP до следующего уровня
+          </p>
+        </div>
+        <Trophy className="absolute -right-4 -bottom-4 text-white/10" size={120} />
+      </div>
+
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border p-4 shadow-sm">
-          <p className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Академическая готовность</p>
-          <p className="text-2xl font-bold text-primary mt-1">84.2%</p>
-          <div className="w-full bg-slate-100 h-1.5 mt-2 rounded-full overflow-hidden">
-            <div className="bg-accent h-full" style={{ width: '84%' }}></div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white border p-4 shadow-sm rounded-2xl md:rounded-none">
+          <p className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Готовность к НИШ/БИЛ</p>
+          <p className="text-2xl font-black text-primary mt-1">{userStats.readiness}%</p>
+          <div className="w-full bg-slate-100 h-1 mt-2 rounded-full overflow-hidden">
+            <div className="bg-emerald-500 h-full" style={{ width: `${userStats.readiness}%` }}></div>
           </div>
         </div>
-        <div className="bg-white border p-4 shadow-sm">
-          <p className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Тестов завершено</p>
-          <p className="text-2xl font-bold text-primary mt-1">142 <span className="text-xs text-slate-400 font-normal">/ 200</span></p>
-          <p className="text-[10px] text-green-600 font-bold mt-2">+12 на этой неделе</p>
+        <div className="bg-white border p-4 shadow-sm rounded-2xl md:rounded-none">
+          <p className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Уроков пройдено</p>
+          <p className="text-2xl font-black text-primary mt-1">{userStats.lessonsCompleted}</p>
+          <p className="text-[10px] text-green-600 font-bold mt-2 flex items-center gap-1">
+            <Target size={10} /> Стабильный прогресс
+          </p>
         </div>
         <div className="bg-white border p-4 shadow-sm">
           <p className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Пробные экзамены</p>
@@ -149,12 +210,14 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-primary text-white p-6 shadow-sm">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-accent mb-4">Академическая справка</h3>
+          <div className="bg-primary text-white p-6 shadow-sm rounded-3xl md:rounded-none">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-accent mb-4">Академический статус</h3>
             <p className="text-xs text-slate-300 leading-relaxed mb-6">
-              Ваши показатели в разделе "Математика" выросли на 12% за текущий месяц. Рекомендуем уделить внимание разделу "Анализ текста".
+              Ваш уровень подготовки оценивается как стабильный. Для достижения максимального балла в НИШ рекомендуем сосредоточиться на задачах логики уровня B2.
             </p>
-            <button className="w-full btn-accent">Скачать отчет</button>
+            <button className="w-full py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-xs font-bold uppercase tracking-widest transition-all">
+              Посмотреть план
+            </button>
           </div>
         </div>
       </div>

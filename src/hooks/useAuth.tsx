@@ -38,6 +38,36 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: any;
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,43 +80,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // Listen to user profile and subscription
         const unsubProfile = onSnapshot(userDocRef, async (docSnap) => {
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            
-            // Fetch subscription
-            const subDocRef = doc(db, 'users', firebaseUser.uid, 'subscription', 'current');
-            const subSnap = await getDoc(subDocRef);
-            const subInfo = subSnap.exists() ? subSnap.data() as User['subInfo'] : null;
+          try {
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              
+              // Fetch subscription
+              const subDocRef = doc(db, 'users', firebaseUser.uid, 'subscription', 'current');
+              const subSnap = await getDoc(subDocRef);
+              const subInfo = subSnap.exists() ? subSnap.data() as User['subInfo'] : null;
 
-            setUser({
-              id: firebaseUser.uid,
-              name: data.name || firebaseUser.displayName || 'Пользователь',
-              email: firebaseUser.email || '',
-              role: data.role || 'student',
-              subscription: subInfo ? 'active' : 'inactive',
-              subInfo: subInfo
-            });
-          } else {
-            // First time login - create profile
-            const newUser: User = {
-              id: firebaseUser.uid,
-              name: firebaseUser.displayName || 'Пользователь',
-              email: firebaseUser.email || '',
-              role: 'student',
-              subscription: 'inactive',
-              subInfo: null
-            };
-            
-            await setDoc(userDocRef, {
-              name: newUser.name,
-              email: newUser.email,
-              role: newUser.role,
-              subscription_status: 'inactive',
-              created_at: new Date().toISOString()
-            });
-            
-            setUser(newUser);
+              setUser({
+                id: firebaseUser.uid,
+                name: data.name || firebaseUser.displayName || 'Пользователь',
+                email: firebaseUser.email || '',
+                role: firebaseUser.email === 'jarves276@gmail.com' ? 'admin' : (data.role || 'student'),
+                subscription: subInfo ? 'active' : 'inactive',
+                subInfo: subInfo
+              });
+            } else {
+              // First time login - create profile
+              const newUser: User = {
+                id: firebaseUser.uid,
+                name: firebaseUser.displayName || 'Пользователь',
+                email: firebaseUser.email || '',
+                role: firebaseUser.email === 'jarves276@gmail.com' ? 'admin' : 'student',
+                subscription: 'inactive',
+                subInfo: null
+              };
+              
+              const path = `users/${firebaseUser.uid}`;
+              try {
+                await setDoc(userDocRef, {
+                  name: newUser.name,
+                  email: newUser.email,
+                  role: newUser.role,
+                  subscription_status: 'inactive',
+                  created_at: new Date().toISOString()
+                });
+                setUser(newUser);
+              } catch (err) {
+                handleFirestoreError(err, OperationType.WRITE, path);
+              }
+            }
+          } catch (err) {
+            console.error('Error processing profile update:', err);
           }
+          setIsLoading(false);
+        }, (error) => {
+          handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
           setIsLoading(false);
         });
 

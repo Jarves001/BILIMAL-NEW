@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
+import Logo from './Logo';
+
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const location = useLocation();
@@ -19,25 +21,24 @@ export default function Sidebar() {
   const isActive = (path: string) => location.pathname === path;
 
   const links = [
-    { name: 'Дашборд', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Каталог курсов', path: '/dashboard', icon: BookOpen }, // Reusing dashboard for catalog for now
+    { name: 'Портал', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Мой профиль', path: '/profile', icon: UserIcon },
     { name: 'Настроить тариф', path: '/subscriptions', icon: Trophy },
   ];
 
   const subjects = [
     { name: 'Математика', path: '/dashboard?subject=math' },
     { name: 'Логика & IQ', path: '/dashboard?subject=logic' },
-    { name: 'Анализ текста', path: '/dashboard?subject=lang' },
+    { name: 'Языки', path: '/dashboard?subject=languages' },
+    { name: 'Анализ текста', path: '/dashboard?subject=reading' },
   ];
 
   return (
-    <aside className="w-64 bg-primary text-white flex flex-col shrink-0 h-screen sticky top-0 overflow-hidden">
+    <aside className="fixed inset-y-0 left-0 z-50 w-64 bg-primary text-white flex flex-col shrink-0 h-screen transition-transform -translate-x-full md:relative md:translate-x-0 overflow-hidden">
       <div className="p-6 border-b border-white/10 shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-accent flex items-center justify-center font-bold text-primary rounded">B</div>
-          <span className="text-xl font-bold tracking-tight">BILIMAL</span>
-        </div>
-        <p className="text-[10px] text-accent uppercase tracking-[0.2em] mt-1 font-semibold">Academic Platform</p>
+        <Link to="/" className="flex flex-col items-start px-2">
+          <Logo light className="h-10" />
+        </Link>
       </div>
 
       <nav className="flex-1 py-4 overflow-y-auto px-3 space-y-1">
@@ -63,6 +64,16 @@ export default function Sidebar() {
           </Link>
         )}
 
+        {user?.role === 'teacher' && (
+          <Link
+            to="/teacher"
+            className={`sidebar-link ${isActive('/teacher') ? 'sidebar-link-active' : 'sidebar-link-inactive'}`}
+          >
+            <GraduationCap size={18} />
+            <span>Панель учителя</span>
+          </Link>
+        )}
+
         <div className="text-[10px] uppercase text-white/40 font-bold px-3 py-2 tracking-widest mt-4">Предметы НИШ/БИЛ</div>
         {subjects.map(subject => (
           <Link
@@ -83,7 +94,7 @@ export default function Sidebar() {
           <div className="flex-1 overflow-hidden">
             <p className="text-xs font-bold truncate">{user?.name}</p>
             <p className="text-[10px] text-accent truncate uppercase font-bold">
-              {user?.subscription === 'active' ? 'PRO Подписка' : 'Обычный аккаунт'}
+              {user?.role !== 'student' ? user?.role.toUpperCase() : (user?.subscription === 'active' ? 'PRO Подписка' : 'Обычный аккаунт')}
             </p>
           </div>
           <button onClick={() => logout()} className="text-white/40 hover:text-white">

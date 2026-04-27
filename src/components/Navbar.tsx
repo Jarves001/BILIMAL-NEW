@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { BookOpen, LogOut, User as UserIcon, Shield } from 'lucide-react';
+import { LogOut, User as UserIcon } from 'lucide-react';
+import Logo from './Logo';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -14,10 +15,9 @@ export default function Navbar() {
   return (
     <nav className="bg-primary text-white sticky top-0 z-50 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-accent rounded flex items-center justify-center font-bold text-primary text-xl">B</div>
-            <span className="text-2xl font-bold tracking-tighter">BILIMAL</span>
+        <div className="flex justify-between h-20 items-center">
+          <Link to="/" className="flex items-center">
+            <Logo light className="h-10" />
           </Link>
           
           <div className="hidden md:flex items-center space-x-8">

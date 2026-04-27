@@ -81,6 +81,22 @@
         "hasAiChat": { "type": "boolean" }
       },
       "required": ["userId", "plan", "startDate", "endDate"]
+    },
+    "TeacherApplication": {
+      "title": "Teacher Application",
+      "description": "Application submitted by a potential teacher",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "education": { "type": "string" },
+        "experience": { "type": "string" },
+        "phone": { "type": "string" },
+        "subject": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "appliedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "education", "experience", "phone", "subject", "status"]
     }
   },
   "firestore": {
@@ -91,6 +107,10 @@
     "/users/{userId}/subscription/current": {
       "schema": "Subscription",
       "description": "Active subscription for the user"
+    },
+    "/teacher_applications/{applicationId}": {
+      "schema": "TeacherApplication",
+      "description": "Teacher job applications"
     },
     "/courses/{courseId}": {
       "schema": "Course",

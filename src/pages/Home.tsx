@@ -4,16 +4,16 @@ import { motion } from 'motion/react';
 
 export default function Home() {
   const subjects = [
-    { title: 'Математика', icon: <BookOpen className="text-accent" />, description: 'Углубленная программа НИШ/БИЛ' },
-    { title: 'Логика & IQ', icon: <Target className="text-accent" />, description: 'Решение нестандартных задач' },
-    { title: 'Языки', icon: <Award className="text-accent" />, description: 'Казахский, Русский, Английский' },
-    { title: 'Анализ текста', icon: <GraduationCap className="text-accent" />, description: 'Критическое чтение и понимание' },
+    { title: 'Математика', icon: <BookOpen className="text-accent" />, description: 'Углубленная программа НИШ/БИЛ', slug: 'math' },
+    { title: 'Логика & IQ', icon: <Target className="text-accent" />, description: 'Решение нестандартных задач', slug: 'logic' },
+    { title: 'Языки', icon: <Award className="text-accent" />, description: 'Казахский, Русский, Английский', slug: 'languages' },
+    { title: 'Анализ текста', icon: <GraduationCap className="text-accent" />, description: 'Критическое чтение и понимание', slug: 'reading' },
   ];
 
   return (
     <div className="bg-white">
       {/* Hero Section */}
-      <section className="relative h-[600px] flex items-center overflow-hidden bg-primary">
+      <section className="relative min-h-[500px] md:h-[600px] flex items-center py-12 overflow-hidden bg-primary">
         <div className="absolute inset-0 opacity-10">
           <div className="grid grid-cols-12 gap-4 h-full transform -rotate-12 scale-150">
             {Array.from({ length: 48 }).map((_, i) => (
@@ -29,7 +29,7 @@ export default function Home() {
             transition={{ duration: 0.6 }}
           >
             <span className="text-accent uppercase tracking-[0.3em] font-bold text-sm mb-4 block">Professional Preparation</span>
-            <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-8 max-w-3xl">
+            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold leading-tight mb-8 max-w-3xl">
               Ваш путь в <span className="text-accent italic">НИШ и БИЛ</span> начинается здесь
             </h1>
             <p className="text-xl text-gray-300 mb-10 max-w-2xl leading-relaxed">
@@ -54,12 +54,18 @@ export default function Home() {
           {subjects.map((subject, index) => (
             <motion.div
               key={index}
-              whileHover={{ y: -5 }}
-              className="card border-t-4 border-t-accent flex flex-col items-center text-center p-8"
+              whileHover={{ y: -10 }}
+              className="card border-t-4 border-t-accent flex flex-col items-center text-center p-8 bg-white shadow-lg hover:shadow-2xl transition-all"
             >
               <div className="mb-6 p-4 bg-gray-50 rounded-full">{subject.icon}</div>
               <h3 className="text-xl font-bold mb-3">{subject.title}</h3>
-              <p className="text-gray-600 text-sm">{subject.description}</p>
+              <p className="text-gray-600 text-sm mb-6">{subject.description}</p>
+              <Link 
+                to={`/quiz?subject=${subject.slug}`} 
+                className="mt-auto text-primary font-bold flex items-center gap-1 hover:gap-2 transition-all"
+              >
+                Пройти тест <ChevronRight size={18} />
+              </Link>
             </motion.div>
           ))}
         </div>

@@ -2,14 +2,19 @@ import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import cors from 'cors';
-import * as admin from 'firebase-admin';
+import { initializeApp } from 'firebase-admin/app';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
+
+import firebaseConfig from './firebase-applet-config.json';
 
 // Initialize Firebase Admin
-admin.initializeApp({
-  projectId: "gen-lang-client-0273994148", // Hardcoded from config for clarity if needed, or omit for default
+const adminApp = initializeApp({
+  projectId: firebaseConfig.projectId,
 });
 
-const db = admin.firestore();
+const db = getFirestore(adminApp, firebaseConfig.firestoreDatabaseId);
+const auth = getAuth(adminApp);
 
 const PLANS = {
   basic: { title: 'Стандарт (30 дней)', days: 30, price: 9990, video: true, tests: true, exams: 1, ai: false },
@@ -40,7 +45,7 @@ async function startServer() {
           description: 'Полный курс по математике для подготовки к поступлению в 7 класс НИШ.',
           subject: 'Математика',
           teacher_id: 'system',
-          created_at: admin.firestore.FieldValue.serverTimestamp()
+          created_at: FieldValue.serverTimestamp()
         });
         
         const lesson1Ref = await db.collection('courses').doc(course1Ref.id).collection('lessons').add({
@@ -65,7 +70,7 @@ async function startServer() {
           description: 'Развитие аналитических навыков для решения IQ тестов.',
           subject: 'Логика',
           teacher_id: 'system',
-          created_at: admin.firestore.FieldValue.serverTimestamp()
+          created_at: FieldValue.serverTimestamp()
         });
 
         await db.collection('courses').add({
@@ -73,7 +78,7 @@ async function startServer() {
           description: 'Подготовка к секции English для поступления в 7 класс.',
           subject: 'Английский язык',
           teacher_id: 'system',
-          created_at: admin.firestore.FieldValue.serverTimestamp()
+          created_at: FieldValue.serverTimestamp()
         });
 
         await db.collection('courses').add({
@@ -81,7 +86,7 @@ async function startServer() {
           description: 'Мәтінмен жұмыс және грамматикалық талдау.',
           subject: 'Казахский язык',
           teacher_id: 'system',
-          created_at: admin.firestore.FieldValue.serverTimestamp()
+          created_at: FieldValue.serverTimestamp()
         });
         
         console.log('Seed complete.');
@@ -90,7 +95,6 @@ async function startServer() {
       console.error('Seed ERROR:', err);
     }
   };
-  await seed();
 
   app.use(cors());
   app.use(express.json());
@@ -101,7 +105,7 @@ async function startServer() {
     if (authHeader) {
       const token = authHeader.split(' ')[1];
       try {
-        const decodedToken = await admin.auth().verifyIdToken(token);
+        const decodedToken = await auth.verifyIdToken(token);
         req.user = decodedToken;
         next();
       } catch (err: any) {
@@ -129,7 +133,6 @@ async function startServer() {
   };
 
   const checkSubscription = async (req: any, res: any, next: any) => {
-    // In Firebase Admin, custom claims can be used for roles, but let's check Firestore User doc for now
     const userDoc = await db.collection('users').doc(req.user.uid).get();
     const userData = userDoc.data();
     
@@ -175,7 +178,6 @@ async function startServer() {
 
       await db.collection('users').doc(req.user.uid).collection('subscription').doc('current').set(subInfo);
       
-      // Update user status too
       await db.collection('users').doc(req.user.uid).update({
         subscription_status: 'active'
       });
@@ -225,19 +227,13 @@ async function startServer() {
   });
 
   app.get('/api/lessons/:lessonId/tasks', authenticate, checkSubscription, async (req: any, res) => {
-    // Need to find which course the lesson belongs to. 
-    // In a real app we'd pass courseId or have a flat structure.
-    // For simplicity, let's assume we pass it or query all courses (not efficient)
-    // Better: frontend should pass both or we have a flat lessons collection.
-    // Let's use a query across collections if possible or just assume courseId in params
-    const { courseId } = req.query; // If provided
+    const { courseId } = req.query;
     
     if (courseId) {
       const tasksSnap = await db.collection('courses').doc(courseId as string).collection('lessons').doc(req.params.lessonId).collection('tasks').get();
       const tasks = tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       res.json(tasks);
     } else {
-      // Fallback: search all courses (slow, just for migration safety)
       const coursesSnap = await db.collection('courses').get();
       for (const course of coursesSnap.docs) {
         const tasksSnap = await db.collection('courses').doc(course.id).collection('lessons').doc(req.params.lessonId).collection('tasks').get();
@@ -258,7 +254,7 @@ async function startServer() {
       course_id: courseId,
       score,
       total_questions: totalQuestions,
-      completed_at: admin.firestore.FieldValue.serverTimestamp()
+      completed_at: FieldValue.serverTimestamp()
     });
     res.json({ message: 'Result saved' });
   });
@@ -272,7 +268,7 @@ async function startServer() {
     try {
       const subRef = db.collection('users').doc(req.user.uid).collection('subscription').doc('current');
       await subRef.update({
-        exams_left: admin.firestore.FieldValue.increment(-1)
+        exams_left: FieldValue.increment(-1)
       });
       res.json({ message: 'Exam used', examsLeft: sub.exams_left - 1 });
     } catch (err: any) {
@@ -297,6 +293,8 @@ async function startServer() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`BILIMAL Server running on http://localhost:${PORT}`);
+    // Seed in background
+    seed().catch(err => console.error('Background seed failed:', err));
   });
 }
 
