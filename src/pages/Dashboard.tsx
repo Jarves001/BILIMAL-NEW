@@ -38,7 +38,7 @@ export default function Dashboard() {
         
         const total = results.reduce((acc, r) => acc + (r.score || 0), 0);
         const accuracy = results.length > 0 
-          ? (results.reduce((acc, curr) => acc + (curr.score / curr.total_questions), 0) / results.length) * 100
+          ? (results.reduce((acc, curr) => acc + (curr.score / (curr.total_questions || 1)), 0) / results.length) * 100
           : 0;
 
         setUserStats({

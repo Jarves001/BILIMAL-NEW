@@ -27,14 +27,14 @@ export default function TeacherApplication() {
 
     try {
       await addDoc(collection(db, 'teacher_applications'), {
-        userId: user.id,
+        user_id: user.id,
         name: formData.name,
         education: formData.education,
         experience: formData.experience,
         phone: formData.phone,
         subject: formData.subject,
         status: 'pending',
-        appliedAt: new Date().toISOString()
+        applied_at: new Date().toISOString()
       });
       setIsSubmitted(true);
     } catch (err) {

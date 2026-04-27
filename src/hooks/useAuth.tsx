@@ -81,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Listen to user profile and subscription
         const unsubProfile = onSnapshot(userDocRef, async (docSnap) => {
           try {
+            console.log('Profile snapshot received:', docSnap.exists() ? 'Exists' : 'Missing');
             if (docSnap.exists()) {
               const data = docSnap.data();
               
@@ -89,21 +90,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const subSnap = await getDoc(subDocRef);
               const subInfo = subSnap.exists() ? subSnap.data() as User['subInfo'] : null;
 
+              const userEmail = firebaseUser.email?.toLowerCase() || '';
+              const isAdminUser = userEmail === 'jarves276@gmail.com';
+              console.log('Auth check:', { email: userEmail, isAdminUser, roleFromDb: data.role });
+
               setUser({
                 id: firebaseUser.uid,
                 name: data.name || firebaseUser.displayName || 'Пользователь',
-                email: firebaseUser.email || '',
-                role: firebaseUser.email === 'jarves276@gmail.com' ? 'admin' : (data.role || 'student'),
+                email: userEmail,
+                role: isAdminUser ? 'admin' : (data.role || 'student'),
                 subscription: subInfo ? 'active' : 'inactive',
                 subInfo: subInfo
               });
             } else {
               // First time login - create profile
+              const userEmail = firebaseUser.email?.toLowerCase() || '';
+              const isAdminUser = userEmail === 'jarves276@gmail.com';
+              console.log('Creating new profile for:', userEmail, 'is Admin:', isAdminUser);
+              
               const newUser: User = {
                 id: firebaseUser.uid,
                 name: firebaseUser.displayName || 'Пользователь',
-                email: firebaseUser.email || '',
-                role: firebaseUser.email === 'jarves276@gmail.com' ? 'admin' : 'student',
+                email: userEmail,
+                role: isAdminUser ? 'admin' : 'student',
                 subscription: 'inactive',
                 subInfo: null
               };

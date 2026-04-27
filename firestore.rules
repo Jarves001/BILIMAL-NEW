@@ -13,17 +13,19 @@ service cloud.firestore {
     function existing() { return resource.data; }
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
     
-    // Admin check: Requires an entry in /admins/{uid}
+    // Admin check: Requires an entry in /admins/{uid} or matching email
     function isAdmin() { 
       return isSignedIn() && (
-        request.auth.token.email == 'jarves276@gmail.com' ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        request.auth.token.email.lower() == 'jarves276@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
     
     function isTeacher() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+      // Safer check for teacher role
+      return isSignedIn() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
     }
 
     // --- Validation Helpers ---
@@ -38,27 +40,27 @@ service cloud.firestore {
     }
 
     function isValidTeacherApplication(data) {
-       return data.keys().hasAll(['userId', 'name', 'education', 'experience', 'phone', 'subject', 'status', 'appliedAt'])
+       return data.keys().hasAll(['user_id', 'name', 'education', 'experience', 'phone', 'subject', 'status', 'applied_at'])
           && data.keys().size() == 8
-          && data.userId == request.auth.uid
+          && data.user_id == request.auth.uid
           && data.status == 'pending';
     }
 
     function isValidCourse(data) {
-      return data.keys().hasAll(['title', 'description', 'subject', 'teacherId'])
+      return data.keys().hasAll(['title', 'description', 'subject', 'teacher_id'])
           && data.keys().size() >= 4 
           && data.title is string && data.title.size() <= 200
           && data.description is string && data.description.size() <= 2000
           && data.subject is string && data.subject.size() <= 100
-          && data.teacherId == request.auth.uid;
+          && data.teacher_id == request.auth.uid;
     }
 
     function isValidLesson(data) {
-      return data.keys().hasAll(['title', 'videoUrl', 'orderIndex', 'courseId'])
+      return data.keys().hasAll(['title', 'video_url', 'order_index', 'course_id'])
           && data.keys().size() >= 4
           && data.title is string && data.title.size() <= 200
-          && data.videoUrl is string && data.videoUrl.size() <= 500
-          && data.orderIndex is number;
+          && data.video_url is string && data.video_url.size() <= 500
+          && data.order_index is number;
     }
 
     function isValidTask(data) {
@@ -108,7 +110,7 @@ service cloud.firestore {
     }
 
     match /teacher_applications/{applicationId} {
-      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow get: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin());
       allow list: if isAdmin();
       allow create: if isSignedIn() && isValidTeacherApplication(incoming());
       allow update: if isAdmin();
@@ -118,7 +120,7 @@ service cloud.firestore {
       allow get: if isSignedIn();
       allow list: if isSignedIn();
       allow create: if (isAdmin() || isTeacher()) && isValidCourse(incoming());
-      allow update, delete: if isAdmin() || (isTeacher() && existing().teacherId == request.auth.uid);
+      allow update, delete: if isAdmin() || (isTeacher() && existing().teacher_id == request.auth.uid);
 
       match /lessons/{lessonId} {
         allow get: if isSignedIn();

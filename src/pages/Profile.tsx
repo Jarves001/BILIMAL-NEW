@@ -43,7 +43,6 @@ export default function Profile() {
         const q = query(
           collection(db, 'results'),
           where('user_id', '==', user?.id),
-          orderBy('completed_at', 'desc'),
           limit(20)
         );
         const snap = await getDocs(q);
@@ -51,9 +50,9 @@ export default function Profile() {
         setResults(historyData);
 
         // Calculate stats
-        const total = historyData.reduce((acc, curr) => acc + curr.score, 0);
+        const total = historyData.reduce((acc, curr) => acc + (curr.score || 0), 0);
         const accuracy = historyData.length > 0 
-          ? (historyData.reduce((acc, curr) => acc + (curr.score / curr.total_questions), 0) / historyData.length) * 100
+          ? (historyData.reduce((acc, curr) => acc + (curr.score / (curr.total_questions || 1)), 0) / historyData.length) * 100
           : 0;
         
         const xpPerLevel = 100;

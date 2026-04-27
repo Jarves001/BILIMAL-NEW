@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, query, getDocs, doc, updateDoc, where, getDoc } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
-import { Users, GraduationCap, CheckCircle2, XCircle, Clock, BookOpen, UserCheck, ShieldAlert } from 'lucide-react';
+import { Users, GraduationCap, CheckCircle2, XCircle, Clock, BookOpen, UserCheck, ShieldAlert, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function AdminDashboard() {
@@ -11,54 +11,57 @@ export default function AdminDashboard() {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'students' | 'teachers' | 'applications'>('students');
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        // Fetch Users (Teachers and Students)
-        const usersSnap = await getDocs(collection(db, 'users'));
-        const allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
-        
-        // Fetch all subscriptions for all users
-        const studentsList: any[] = [];
-        const teachersList: any[] = [];
+  const fetchData = async (isManual = false) => {
+    if (isManual) setRefreshing(true);
+    try {
+      // Fetch Users (Teachers and Students)
+      const usersSnap = await getDocs(collection(db, 'users'));
+      const allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+      
+      // Fetch all subscriptions for all users
+      const studentsList: any[] = [];
+      const teachersList: any[] = [];
 
-        for (const u of allUsers) {
-          if (u.role === 'teacher') {
-            teachersList.push(u);
-          } else if (u.role === 'student' || !u.role) {
-            // Need subscription info
-            const subRef = doc(db, 'users', u.id, 'subscription', 'current');
-            const subSnap = await getDoc(subRef);
-            
-            // Need score for level
-            const resultsSnap = await getDocs(query(collection(db, 'results'), where('user_id', '==', u.id)));
-            const totalScore = resultsSnap.docs.reduce((acc, curr) => acc + (curr.data().score || 0), 0);
-            
-            studentsList.push({
-              ...u,
-              subscription: subSnap.exists() ? subSnap.data() : null,
-              level: Math.floor(totalScore / 100) + 1,
-              totalScore
-            });
-          }
+      for (const u of allUsers) {
+        if (u.role === 'teacher') {
+          teachersList.push(u);
+        } else if (u.role === 'student' || !u.role) {
+          // Need subscription info
+          const subRef = doc(db, 'users', u.id, 'subscription', 'current');
+          const subSnap = await getDoc(subRef);
+          
+          // Need score for level
+          const resultsSnap = await getDocs(query(collection(db, 'results'), where('user_id', '==', u.id)));
+          const totalScore = resultsSnap.docs.reduce((acc, curr) => acc + (curr.data().score || 0), 0);
+          
+          studentsList.push({
+            ...u,
+            subscription: subSnap.exists() ? subSnap.data() : null,
+            level: Math.floor(totalScore / 100) + 1,
+            totalScore
+          });
         }
-
-        setStudents(studentsList);
-        setTeachers(teachersList);
-
-        // Fetch Applications
-        const appsSnap = await getDocs(collection(db, 'teacher_applications'));
-        setApplications(appsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-        
-      } catch (err) {
-        console.error('Error fetching admin data:', err);
-      } finally {
-        setLoading(false);
       }
-    }
 
+      setStudents(studentsList);
+      setTeachers(teachersList);
+
+      // Fetch Applications
+      const appsSnap = await getDocs(collection(db, 'teacher_applications'));
+      setApplications(appsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+      
+    } catch (err) {
+      console.error('Error fetching admin data:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
     if (user?.role === 'admin') {
       fetchData();
     }
@@ -70,7 +73,7 @@ export default function AdminDashboard() {
       await updateDoc(doc(db, 'teacher_applications', app.id), { status: 'approved' });
       
       // 2. Update user role and subject
-      await updateDoc(doc(db, 'users', app.userId), { 
+      await updateDoc(doc(db, 'users', app.user_id), { 
         role: 'teacher',
         subject: app.subject,
         teacherStatus: 'active'
@@ -97,6 +100,21 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8 pb-20">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-primary uppercase tracking-tighter">Панель администратора</h1>
+          <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Глобальное управление системой</p>
+        </div>
+        <button 
+          onClick={() => fetchData(true)}
+          disabled={refreshing}
+          className="flex items-center gap-2 bg-white border border-slate-200 px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-widest text-primary hover:bg-slate-50 transition-all disabled:opacity-50"
+        >
+          <RefreshCw className={refreshing ? 'animate-spin' : ''} size={16} />
+          {refreshing ? 'Обновление...' : 'Обновить данные'}
+        </button>
+      </div>
+
       {/* Header Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-primary p-6 rounded-3xl text-white">

@@ -8,8 +8,8 @@
         "name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "role": { "type": "string", "enum": ["admin", "teacher", "student"] },
-        "subscriptionStatus": { "type": "string", "enum": ["active", "inactive"] },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "subscription_status": { "type": "string", "enum": ["active", "inactive"] },
+        "created_at": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "email", "role"]
     },
@@ -57,46 +57,46 @@
       "description": "User test results",
       "type": "object",
       "properties": {
-        "userId": { "type": "string" },
-        "lessonId": { "type": "string" },
-        "courseId": { "type": "string" },
+        "user_id": { "type": "string" },
+        "lesson_id": { "type": "string" },
+        "course_id": { "type": "string" },
         "score": { "type": "number" },
-        "totalQuestions": { "type": "number" },
-        "completedAt": { "type": "string", "format": "date-time" }
+        "total_questions": { "type": "number" },
+        "completed_at": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "lessonId", "score", "totalQuestions"]
+      "required": ["user_id", "lesson_id", "score", "total_questions"]
     },
     "Subscription": {
       "title": "Subscription",
       "description": "User subscription details",
       "type": "object",
       "properties": {
-        "userId": { "type": "string" },
+        "user_id": { "type": "string" },
         "plan": { "type": "string", "enum": ["basic", "test", "premium"] },
         "price": { "type": "number" },
-        "startDate": { "type": "string", "format": "date-time" },
-        "endDate": { "type": "string", "format": "date-time" },
-        "examsLeft": { "type": "number" },
-        "hasVideoAccess": { "type": "boolean" },
-        "hasAiChat": { "type": "boolean" }
+        "start_date": { "type": "string", "format": "date-time" },
+        "end_date": { "type": "string", "format": "date-time" },
+        "exams_left": { "type": "number" },
+        "has_video_access": { "type": "boolean" },
+        "has_ai_chat": { "type": "boolean" }
       },
-      "required": ["userId", "plan", "startDate", "endDate"]
+      "required": ["user_id", "plan", "start_date", "end_date"]
     },
     "TeacherApplication": {
       "title": "Teacher Application",
       "description": "Application submitted by a potential teacher",
       "type": "object",
       "properties": {
-        "userId": { "type": "string" },
+        "user_id": { "type": "string" },
         "name": { "type": "string" },
         "education": { "type": "string" },
         "experience": { "type": "string" },
         "phone": { "type": "string" },
         "subject": { "type": "string" },
         "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
-        "appliedAt": { "type": "string", "format": "date-time" }
+        "applied_at": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "name", "education", "experience", "phone", "subject", "status"]
+      "required": ["user_id", "name", "education", "experience", "phone", "subject", "status"]
     }
   },
   "firestore": {

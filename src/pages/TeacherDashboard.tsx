@@ -34,7 +34,7 @@ export default function TeacherDashboard() {
     async function fetchData() {
       if (!user) return;
       try {
-        const coursesSnap = await getDocs(query(collection(db, 'courses'), where('teacherId', '==', user.id)));
+        const coursesSnap = await getDocs(query(collection(db, 'courses'), where('teacher_id', '==', user.id)));
         const coursesList = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         setCourses(coursesList);
 
@@ -91,10 +91,10 @@ export default function TeacherDashboard() {
         title: newCourse.title,
         description: newCourse.description,
         subject: (user as any).subject || 'math',
-        teacherId: user.id,
-        createdAt: new Date().toISOString()
+        teacher_id: user.id,
+        created_at: new Date().toISOString()
       });
-      setCourses([{ id: docRef.id, title: newCourse.title, description: newCourse.description, teacherId: user.id }, ...courses]);
+      setCourses([{ id: docRef.id, title: newCourse.title, description: newCourse.description, teacher_id: user.id }, ...courses]);
       setIsAddingCourse(false);
       setNewCourse({ title: '', description: '' });
     } catch (err) {
@@ -108,9 +108,9 @@ export default function TeacherDashboard() {
     try {
       const lessonData = {
         title: newLesson.title,
-        videoUrl: newLesson.videoUrl,
-        orderIndex: lessons.length + 1,
-        courseId: selectedCourse.id,
+        video_url: newLesson.videoUrl,
+        order_index: lessons.length + 1,
+        course_id: selectedCourse.id,
       };
       const docRef = await addDoc(collection(db, `courses/${selectedCourse.id}/lessons`), lessonData);
       setLessons([...lessons, { ...lessonData, id: docRef.id }]);
@@ -266,7 +266,7 @@ export default function TeacherDashboard() {
               <tbody className="divide-y divide-slate-100">
                 {students.map(s => {
                    const avgScore = s.results.length > 0 
-                     ? (s.results.reduce((acc: number, r: any) => acc + (r.score / r.totalQuestions), 0) / s.results.length * 100).toFixed(1)
+                     ? (s.results.reduce((acc: number, r: any) => acc + (r.score / (r.total_questions || 1)), 0) / s.results.length * 100).toFixed(1)
                      : 0;
                    return (
                     <tr key={s.id} className="hover:bg-slate-50/50 transition-colors">

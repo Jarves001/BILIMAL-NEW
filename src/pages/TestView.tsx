@@ -82,11 +82,11 @@ export default function TestView() {
 
     try {
       await api.post('/results', {
-        userId: user?.id,
-        lessonId,
-        courseId,
+        user_id: user?.id,
+        lesson_id: lessonId,
+        course_id: courseId,
         score: finalScore,
-        totalQuestions: tasks.length
+        total_questions: tasks.length
       });
     } catch (err) {
       console.error('Failed to save result:', err);

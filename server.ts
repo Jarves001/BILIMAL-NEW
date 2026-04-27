@@ -247,13 +247,13 @@ async function startServer() {
   });
 
   app.post('/api/results', authenticate, checkSubscription, async (req: any, res: any) => {
-    const { lessonId, courseId, score, totalQuestions } = req.body;
+    const { lesson_id, course_id, score, total_questions } = req.body;
     await db.collection('results').add({
       user_id: req.user.uid,
-      lesson_id: lessonId,
-      course_id: courseId,
+      lesson_id: lesson_id,
+      course_id: course_id,
       score,
-      total_questions: totalQuestions,
+      total_questions: total_questions,
       completed_at: FieldValue.serverTimestamp()
     });
     res.json({ message: 'Result saved' });
