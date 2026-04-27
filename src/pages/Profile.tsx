@@ -56,9 +56,9 @@ export default function Profile() {
         setResults(historyData);
 
         // Calculate stats
-        const total = historyData.reduce((acc, curr) => acc + (curr.score || 0), 0);
+        const total = historyData.reduce((acc, curr) => acc + (Number(curr.score) || 0), 0);
         const accuracy = historyData.length > 0 
-          ? (historyData.reduce((acc, curr) => acc + (curr.score / (curr.total_questions || 1)), 0) / historyData.length) * 100
+          ? (historyData.reduce((acc, curr) => acc + ((Number(curr.score) || 0) / (Number(curr.total_questions) || 1)), 0) / historyData.length) * 100
           : 0;
         
         const xpPerLevel = 100;
@@ -79,26 +79,27 @@ export default function Profile() {
       }
     }
 
-    async function fetchApplication() {
-      try {
-        const q = query(
-          collection(db, 'teacher_applications'),
-          where('user_id', '==', user?.id),
-          orderBy('applied_at', 'desc'),
-          limit(1)
-        );
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          setApplication({ id: snap.docs[0].id, ...snap.docs[0].data() });
-        }
-      } catch (err) {
-        console.error('Failed to fetch application:', err);
-      }
-    }
-
     fetchHistory();
     fetchApplication();
   }, [user]);
+
+  async function fetchApplication() {
+    if (!user) return;
+    try {
+      const q = query(
+        collection(db, 'teacher_applications'),
+        where('user_id', '==', user?.id),
+        orderBy('applied_at', 'desc'),
+        limit(1)
+      );
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        setApplication({ id: snap.docs[0].id, ...snap.docs[0].data() });
+      }
+    } catch (err) {
+      console.error('Failed to fetch application:', err);
+    }
+  }
 
   const handleLogout = async () => {
     try {
@@ -182,9 +183,21 @@ export default function Profile() {
                     {application.status === 'pending' ? 'Заявка на роль учителя: В обработке' : 
                      application.status === 'approved' ? 'Принято: Вы стали учителем!' : 'Заявка отклонена'}
                   </h4>
-                  <span className="text-[10px] font-bold text-slate-400">
-                    {application.applied_at && new Date(application.applied_at).toLocaleDateString()}
-                  </span>
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={() => fetchApplication()}
+                      className="p-1.5 hover:bg-black/5 rounded-lg transition-colors"
+                      title="Обновить статус"
+                    >
+                      <History size={14} className={
+                        application.status === 'pending' ? 'text-amber-500' : 
+                        application.status === 'approved' ? 'text-green-500' : 'text-red-500'
+                      } />
+                    </button>
+                    <span className="text-[10px] font-bold text-slate-400">
+                      {application.applied_at && new Date(application.applied_at).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
                 <p className={`text-xs mt-1 ${
                   application.status === 'pending' ? 'text-amber-600' : 

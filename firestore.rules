@@ -17,6 +17,7 @@ service cloud.firestore {
     function isAdmin() { 
       return isSignedIn() && (
         (request.auth.token.get('email', '').lower() == 'jarves276@gmail.com') ||
+        (request.auth.uid == 'PgAHmtZI71S98LI7KfrTWjURSU53') ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
@@ -97,11 +98,11 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin(); // Only admins can browse all users
-      allow create: if isOwner(userId) && isValidUser(incoming());
-      allow update: if (isOwner(userId) || isAdmin()) && (
-        (isOwner(userId) && incoming().diff(existing()).affectedKeys().hasOnly(['name'])) ||
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin()) && (
+        (request.auth.uid == userId && incoming().diff(existing()).affectedKeys().hasOnly(['name'])) ||
         (isAdmin())
       );
     }

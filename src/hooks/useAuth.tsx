@@ -73,13 +73,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let unsubProfile: (() => void) | null = null;
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Clean up previous profile listener if it exists
+      if (unsubProfile) {
+        unsubProfile();
+        unsubProfile = null;
+      }
+
       if (firebaseUser) {
         // Fetch additional profile data from Firestore
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         
         // Listen to user profile and subscription
-        const unsubProfile = onSnapshot(userDocRef, async (docSnap) => {
+        unsubProfile = onSnapshot(userDocRef, async (docSnap) => {
           try {
             console.log('Profile snapshot received:', docSnap.exists() ? 'Exists' : 'Missing');
             if (docSnap.exists()) {
@@ -136,18 +144,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           setIsLoading(false);
         }, (error) => {
-          handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
+          // If we are still signed in, report the error. 
+          // If we are intentionaly signing out, ignore the permission error that might happen during transition.
+          if (auth.currentUser) {
+            handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
+          }
           setIsLoading(false);
         });
-
-        return () => unsubProfile();
       } else {
         setUser(null);
         setIsLoading(false);
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (unsubProfile) unsubProfile();
+    };
   }, []);
 
   const loginWithGoogle = async () => {
