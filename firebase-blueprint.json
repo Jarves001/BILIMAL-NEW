@@ -1,0 +1,112 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Metadata for authenticated users",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "teacher", "student"] },
+        "subscriptionStatus": { "type": "string", "enum": ["active", "inactive"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "role"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "Educational course",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "subject": { "type": "string" },
+        "teacherId": { "type": "string" }
+      },
+      "required": ["title", "subject"]
+    },
+    "Lesson": {
+      "title": "Lesson",
+      "description": "A lesson within a course",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "orderIndex": { "type": "number" },
+        "courseId": { "type": "string" }
+      },
+      "required": ["title", "courseId"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A question/task within a lesson",
+      "type": "object",
+      "properties": {
+        "question": { "type": "string" },
+        "optionA": { "type": "string" },
+        "optionB": { "type": "string" },
+        "optionC": { "type": "string" },
+        "optionD": { "type": "string" },
+        "correctAnswer": { "type": "string", "enum": ["A", "B", "C", "D"] },
+        "explanation": { "type": "string" }
+      },
+      "required": ["question", "optionA", "optionB", "optionC", "optionD", "correctAnswer"]
+    },
+    "Result": {
+      "title": "Result",
+      "description": "User test results",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "lessonId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "score": { "type": "number" },
+        "totalQuestions": { "type": "number" },
+        "completedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "lessonId", "score", "totalQuestions"]
+    },
+    "Subscription": {
+      "title": "Subscription",
+      "description": "User subscription details",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "plan": { "type": "string", "enum": ["basic", "test", "premium"] },
+        "price": { "type": "number" },
+        "startDate": { "type": "string", "format": "date-time" },
+        "endDate": { "type": "string", "format": "date-time" },
+        "examsLeft": { "type": "number" },
+        "hasVideoAccess": { "type": "boolean" },
+        "hasAiChat": { "type": "boolean" }
+      },
+      "required": ["userId", "plan", "startDate", "endDate"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/users/{userId}/subscription/current": {
+      "schema": "Subscription",
+      "description": "Active subscription for the user"
+    },
+    "/courses/{courseId}": {
+      "schema": "Course",
+      "description": "Courses"
+    },
+    "/courses/{courseId}/lessons/{lessonId}": {
+      "schema": "Lesson",
+      "description": "Lessons in a course"
+    },
+    "/courses/{courseId}/lessons/{lessonId}/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Tasks in a lesson"
+    },
+    "/results/{resultId}": {
+      "schema": "Result",
+      "description": "Global test results"
+    }
+  }
+}

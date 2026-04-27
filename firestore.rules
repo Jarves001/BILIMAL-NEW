@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Global Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    
+    // Admin check: Requires an entry in /admins/{uid}
+    function isAdmin() { 
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // --- Validation Helpers ---
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['name', 'email', 'role', 'subscriptionStatus', 'createdAt'])
+          && data.keys().size() == 5
+          && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+          && data.email is string && data.email.size() > 0 && data.email.size() <= 100
+          && data.role in ['admin', 'teacher', 'student']
+          && data.subscriptionStatus in ['active', 'inactive']
+          && (data.createdAt == request.time || data.createdAt is string); // Allow both for flexibility initially
+    }
+
+    function isValidCourse(data) {
+      return data.keys().hasAll(['title', 'description', 'subject', 'teacherId'])
+          && data.keys().size() == 4
+          && data.title is string && data.title.size() <= 200
+          && data.description is string && data.description.size() <= 2000
+          && data.subject is string && data.subject.size() <= 50;
+    }
+
+    function isValidLesson(data) {
+      return data.keys().hasAll(['title', 'videoUrl', 'orderIndex', 'courseId'])
+          && data.keys().size() == 4
+          && data.title is string && data.title.size() <= 200
+          && data.videoUrl is string && data.videoUrl.size() <= 500
+          && data.orderIndex is number;
+    }
+
+    function isValidTask(data) {
+      return data.keys().hasAll(['question', 'optionA', 'optionB', 'optionC', 'optionD', 'correctAnswer', 'explanation'])
+          && data.keys().size() == 7
+          && data.question is string && data.question.size() <= 1000
+          && data.correctAnswer in ['A', 'B', 'C', 'D']
+          && data.explanation is string && data.explanation.size() <= 2000;
+    }
+
+    function isValidResult(data) {
+      return data.keys().hasAll(['userId', 'lessonId', 'courseId', 'score', 'totalQuestions', 'completedAt'])
+          && data.keys().size() == 6
+          && data.userId == request.auth.uid
+          && data.score is number && data.score >= 0
+          && data.totalQuestions is number && data.totalQuestions > 0
+          && data.completedAt == request.time;
+    }
+
+    function isValidSubscription(data) {
+      return data.keys().hasAll(['userId', 'plan', 'price', 'startDate', 'endDate', 'examsLeft', 'hasVideoAccess', 'hasAiChat'])
+          && data.keys().size() == 8
+          && data.userId == request.auth.uid
+          && data.plan in ['basic', 'test', 'premium']
+          && data.examsLeft is number && data.examsLeft >= 0;
+    }
+
+    // --- Match Blocks ---
+
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin(); // Only admins can browse all users
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if (isOwner(userId) || isAdmin()) && (
+        (isOwner(userId) && incoming().diff(existing()).affectedKeys().hasOnly(['name'])) ||
+        (isAdmin())
+      );
+    }
+
+    match /users/{userId}/subscription/{docId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /courses/{courseId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create, update, delete: if isAdmin() && isValidCourse(incoming());
+
+      match /lessons/{lessonId} {
+        allow get: if isSignedIn();
+        allow list: if isSignedIn();
+        allow create, update, delete: if isAdmin() && isValidLesson(incoming());
+
+        match /tasks/{taskId} {
+          allow get: if isSignedIn();
+          allow list: if isSignedIn();
+          allow create, update, delete: if isAdmin() && isValidTask(incoming());
+        }
+      }
+    }
+
+    match /results/{resultId} {
+      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidResult(incoming());
+      allow update, delete: if isAdmin();
+    }
+  }
+}
