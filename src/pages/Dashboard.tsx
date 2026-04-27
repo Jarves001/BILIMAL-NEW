@@ -6,6 +6,7 @@ import { collection, query, where, getDocs, limit, orderBy } from 'firebase/fire
 import { useAuth } from '../hooks/useAuth';
 import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX, Trophy, Target, MessageSquare, AlertCircle, CheckCircle } from 'lucide-react';
 import { motion } from 'motion/react';
+import { getSubjectLabel } from '../constants';
 
 interface Course {
   id: string;
@@ -72,39 +73,40 @@ export default function Dashboard() {
     fetchStats();
     fetchApplication();
     
-    api.get('/courses').then(res => {
-      // Ensure unique courses by ID and filter out any invalid data
-      const rawCourses = Array.isArray(res.data) ? res.data : [];
-      const uniqueCourses = rawCourses.reduce((acc: Course[], current: any) => {
-        if (!current.id) return acc;
-        const exists = acc.find(item => item.id === current.id);
-        if (!exists) return acc.concat([current as Course]);
-        return acc;
-      }, []);
-      
-      if (uniqueCourses.length < rawCourses.length) {
-        console.warn(`Filtered out ${rawCourses.length - uniqueCourses.length} duplicate courses`);
+    // Fetch courses from Firestore directly for better reliability (fixes permission denial in server-side admin SDK)
+    const fetchCourses = async () => {
+      try {
+        const coursesSnap = await getDocs(collection(db, 'courses'));
+        const coursesData = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+        setCourses(coursesData);
+      } catch (err) {
+        console.error('Failed to fetch courses from firestore:', err);
+        // Fallback to API if firestore fails for some reason
+        api.get('/courses').then(res => {
+          const rawCourses = Array.isArray(res.data) ? res.data : [];
+          setCourses(rawCourses);
+        }).catch(apiErr => console.error('API fetch also failed:', apiErr));
       }
-      
-      setCourses(uniqueCourses);
-    }).catch(err => {
-      console.error('Failed to fetch courses:', err);
-    });
-  }, []);
+    };
+
+    fetchCourses();
+  }, [user]);
 
   const filteredCourses = useMemo(() => {
-    if (!subjectFilter) return courses;
-    return courses.filter(c => c.subject.toLowerCase() === subjectFilter.toLowerCase());
-  }, [courses, subjectFilter]);
+    let base = courses;
+    if (user?.role === 'teacher') {
+      const teacherSubject = (user as any).subject;
+      if (teacherSubject) {
+        base = base.filter(c => c.subject.toLowerCase() === teacherSubject.toLowerCase());
+      }
+    }
+    if (!subjectFilter) return base;
+    return base.filter(c => c.subject.toLowerCase() === subjectFilter.toLowerCase());
+  }, [courses, subjectFilter, user]);
 
   const getSubjectTitle = () => {
-    switch(subjectFilter?.toLowerCase()) {
-      case 'math': return 'Математика';
-      case 'logic': return 'Логика & IQ';
-      case 'languages': return 'Языки';
-      case 'reading': return 'Анализ текста';
-      default: return 'Все курсы';
-    }
+    if (!subjectFilter) return 'Все курсы';
+    return getSubjectLabel(subjectFilter);
   };
 
   return (
@@ -160,7 +162,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-2 ${user?.role === 'teacher' ? 'md:grid-cols-2' : 'md:grid-cols-4'} gap-4`}>
         <div className="bg-white border p-4 shadow-sm rounded-2xl md:rounded-none">
           <p className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Готовность к НИШ/БИЛ</p>
           <p className="text-2xl font-black text-primary mt-1">{userStats.readiness}%</p>
@@ -175,24 +177,28 @@ export default function Dashboard() {
             <Target size={10} /> Стабильный прогресс
           </p>
         </div>
-        <div className="bg-white border p-4 shadow-sm">
-          <p className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Пробные экзамены</p>
-          <p className="text-2xl font-bold text-primary mt-1">
-            {user?.subInfo?.exams_left ?? 0} <span className="text-xs text-slate-400 font-normal">осталось</span>
-          </p>
-          <p className="text-[10px] text-slate-400 mt-2">Доступно в вашем тарифе</p>
-        </div>
-        <div className="bg-white border p-4 border-accent/30 bg-accent/5 shadow-sm">
-          <p className="text-[10px] uppercase text-primary font-bold tracking-wider">Ваша подписка</p>
-          <p className="text-lg font-bold text-accent mt-1 capitalize">
-            {user?.subInfo?.plan ? `${user.subInfo.plan} план` : 'Пробный период'}
-          </p>
-          <p className="text-[10px] text-slate-500 mt-2">
-            {user?.subInfo?.end_date 
-              ? `Действует до ${new Date(user.subInfo.end_date).toLocaleDateString()}`
-              : 'Ограниченный доступ'}
-          </p>
-        </div>
+        {user?.role !== 'teacher' && (
+          <>
+            <div className="bg-white border p-4 shadow-sm">
+              <p className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Пробные экзамены</p>
+              <p className="text-2xl font-bold text-primary mt-1">
+                {user?.subInfo?.exams_left ?? 0} <span className="text-xs text-slate-400 font-normal">осталось</span>
+              </p>
+              <p className="text-[10px] text-slate-400 mt-2">Доступно в вашем тарифе</p>
+            </div>
+            <div className="bg-white border p-4 border-accent/30 bg-accent/5 shadow-sm">
+              <p className="text-[10px] uppercase text-primary font-bold tracking-wider">Ваша подписка</p>
+              <p className="text-lg font-bold text-accent mt-1 capitalize">
+                {user?.subInfo?.plan ? `${user.subInfo.plan} план` : 'Пробный период'}
+              </p>
+              <p className="text-[10px] text-slate-500 mt-2">
+                {user?.subInfo?.end_date 
+                  ? `Действует до ${new Date(user.subInfo.end_date).toLocaleDateString()}`
+                  : 'Ограниченный доступ'}
+              </p>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -277,17 +283,19 @@ export default function Dashboard() {
           <div className="bg-white border p-6 shadow-sm rounded-3xl md:rounded-none">
             <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
               <MessageSquare size={16} className="text-accent" />
-              Связь с учителем
+              Открытый чат
             </h3>
             <p className="text-xs text-slate-500 leading-relaxed mb-6">
-              У вас возникли вопросы по материалу? Вы можете задать их напрямую своему куратору или преподавателю курса.
+              {user?.role === 'teacher' 
+                ? 'Общайтесь со своими учениками и консультируйте их в режиме реального времени.'
+                : 'У вас возникли вопросы по материалу? Вы можете задать их напрямую своему куратору или преподавателю курса.'}
             </p>
-            <button 
-              onClick={() => alert('Функция чата в разработке. Скоро вы сможете общаться с учителями!')}
-              className="w-full py-3 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold uppercase tracking-widest transition-all text-primary"
+            <Link 
+              to={user?.role === 'teacher' ? '/teacher?tab=chat' : '#'}
+              className="w-full py-3 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold uppercase tracking-widest transition-all text-primary block text-center"
             >
-              Создать чат
-            </button>
+              {user?.role === 'teacher' ? 'Открыть чат учителя' : 'Перейти к чату'}
+            </Link>
           </div>
         </div>
       </div>

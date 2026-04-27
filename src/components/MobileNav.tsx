@@ -1,13 +1,15 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Home, BookOpen, User, CreditCard } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 export default function MobileNav() {
   const location = useLocation();
+  const { user } = useAuth();
   
   const navItems = [
     { path: '/', icon: <Home size={24} />, label: 'Главная' },
     { path: '/dashboard', icon: <BookOpen size={24} />, label: 'Портал' },
-    { path: '/subscriptions', icon: <CreditCard size={24} />, label: 'Тарифы' },
+    ...(user?.role !== 'teacher' ? [{ path: '/subscriptions', icon: <CreditCard size={24} />, label: 'Тарифы' }] : []),
     { path: '/profile', icon: <User size={24} />, label: 'Профиль' },
   ];
 

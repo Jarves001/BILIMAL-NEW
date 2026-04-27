@@ -1,4 +1,5 @@
 import { useState, useEffect, FormEvent } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import { collection, query, getDocs, where, addDoc, doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
@@ -16,19 +17,29 @@ import {
   Send
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { getSubjectLabel } from '../constants';
 
 export default function TeacherDashboard() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as any;
   const [courses, setCourses] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'content' | 'stats' | 'students'>('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'stats' | 'students' | 'chat'>(tabParam || 'content');
   const [isAddingCourse, setIsAddingCourse] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [isAddingLesson, setIsAddingLesson] = useState(false);
   const [newCourse, setNewCourse] = useState({ title: '', description: '' });
-  const [newLesson, setNewLesson] = useState({ title: '', videoUrl: '' });
+  const [newLesson, setNewLesson] = useState({ 
+    title: '', 
+    videoUrl: '',
+    tasks: [{ question: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'A', explanation: '' }]
+  });
   const [lessons, setLessons] = useState<any[]>([]);
+
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [newChatMessage, setNewChatMessage] = useState('');
 
   useEffect(() => {
     async function fetchData() {
@@ -116,13 +127,38 @@ export default function TeacherDashboard() {
         order_index: lessons.length + 1,
         course_id: selectedCourse.id,
       };
-      const docRef = await addDoc(collection(db, `courses/${selectedCourse.id}/lessons`), lessonData);
-      setLessons([...lessons, { ...lessonData, id: docRef.id }]);
+      const lessonRef = await addDoc(collection(db, `courses/${selectedCourse.id}/lessons`), lessonData);
+      
+      // Save Tasks
+      for (const task of newLesson.tasks) {
+        if (task.question) {
+          await addDoc(collection(db, `courses/${selectedCourse.id}/lessons/${lessonRef.id}/tasks`), task);
+        }
+      }
+
+      setLessons([...lessons, { ...lessonData, id: lessonRef.id }]);
       setIsAddingLesson(false);
-      setNewLesson({ title: '', videoUrl: '' });
+      setNewLesson({ 
+        title: '', 
+        videoUrl: '', 
+        tasks: [{ question: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'A', explanation: '' }] 
+      });
     } catch (err) {
       console.error('Error creating lesson:', err);
     }
+  };
+
+  const handleAddTask = () => {
+    setNewLesson({
+      ...newLesson,
+      tasks: [...newLesson.tasks, { question: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'A', explanation: '' }]
+    });
+  };
+
+  const updateTask = (index: number, field: string, value: string) => {
+    const updatedTasks = [...newLesson.tasks];
+    (updatedTasks[index] as any)[field] = value;
+    setNewLesson({ ...newLesson, tasks: updatedTasks });
   };
 
   if (loading) return <div className="p-20 text-center uppercase tracking-widest text-xs font-bold text-slate-400">Загрузка учебных материалов...</div>;
@@ -133,7 +169,7 @@ export default function TeacherDashboard() {
         <div>
           <h1 className="text-3xl font-black text-primary uppercase tracking-tighter">Панель преподавателя</h1>
           <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">
-            Предмет: {(user as any).subject?.toUpperCase() || 'НЕ ОПРЕДЕЛЕН'}
+            Предмет: {getSubjectLabel((user as any).subject || 'НЕ ОПРЕДЕЛЕН').toUpperCase()}
           </p>
         </div>
         <button 
@@ -149,6 +185,7 @@ export default function TeacherDashboard() {
         {[
           { id: 'content', label: 'Контент', icon: Layout },
           { id: 'students', label: 'Ученики', icon: Users },
+          { id: 'chat', label: 'Чат', icon: Send },
           { id: 'stats', label: 'Статистика', icon: BarChart3 }
         ].map(tab => (
           <button
@@ -209,12 +246,20 @@ export default function TeacherDashboard() {
              animate={{ opacity: 1, x: 0 }}
              className="space-y-6"
            >
-             <button 
-               onClick={() => setSelectedCourse(null)}
-               className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary flex items-center gap-2"
-             >
-               ← Назад к курсам
-             </button>
+             <div className="flex items-center justify-between gap-4">
+               <button 
+                 onClick={() => setSelectedCourse(null)}
+                 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary flex items-center gap-2 transition-colors"
+               >
+                 ← Назад к курсам
+               </button>
+               <button 
+                 onClick={() => setSelectedCourse(null)}
+                 className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
+               >
+                 <X size={18} />
+               </button>
+             </div>
              
              <div className="bg-white p-8 rounded-3xl border border-slate-200 flex justify-between items-center">
                <div>
@@ -251,6 +296,57 @@ export default function TeacherDashboard() {
            </motion.div>
         )}
 
+        {activeTab === 'chat' && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="bg-white border border-slate-200 rounded-3xl overflow-hidden h-[600px] flex flex-col shadow-sm"
+          >
+            <div className="p-6 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-primary">Открытый чат с учениками</h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Консультации по предмету: {getSubjectLabel((user as any).subject || '')}</p>
+              </div>
+              <div className="flex -space-x-2">
+                {[1,2,3].map(i => (
+                  <div key={i} className="w-8 h-8 rounded-full bg-accent border-2 border-white flex items-center justify-center text-[10px] font-bold">U{i}</div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div className="flex justify-center">
+                 <span className="bg-slate-100 text-[10px] font-bold text-slate-400 px-3 py-1 rounded-full uppercase tracking-tighter">Начало диалога</span>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 shrink-0 flex items-center justify-center text-primary font-bold text-xs italic">A</div>
+                <div className="bg-slate-100 p-4 rounded-2xl rounded-tl-none max-w-[80%]">
+                  <p className="text-sm">Здравствуйте! У меня вопрос по последней задаче из темы уравнений.</p>
+                  <span className="text-[10px] text-slate-400 mt-1 block">Арман • 14:20</span>
+                </div>
+              </div>
+              <div className="flex gap-3 flex-row-reverse">
+                <div className="w-8 h-8 rounded-lg bg-accent shrink-0 flex items-center justify-center text-primary font-bold text-xs italic">T</div>
+                <div className="bg-accent/10 p-4 rounded-2xl rounded-tr-none max-w-[80%]">
+                  <p className="text-sm">Добрый день! Да, в этой задаче нужно сначала раскрыть скобки, а потом перенести все неизвестные в левую часть.</p>
+                  <span className="text-[10px] text-slate-400 mt-1 block">Вы • 14:25</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+               <div className="relative">
+                  <input 
+                    placeholder="Напишите сообщение..."
+                    className="w-full bg-white pl-5 pr-20 py-4 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-accent outline-none text-sm"
+                  />
+                  <button className="absolute right-2 top-2 bottom-2 bg-primary text-white px-5 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-primary/90">
+                    Отправить
+                  </button>
+               </div>
+            </div>
+          </motion.div>
+        )}
         {activeTab === 'students' && (
           <motion.div 
             key="students-list"
@@ -325,7 +421,18 @@ export default function TeacherDashboard() {
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Описание</label>
                 <textarea required rows={3} value={newCourse.description} onChange={e => setNewCourse({...newCourse, description: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-accent outline-none font-medium" />
               </div>
-              <button type="submit" className="w-full py-4 bg-primary text-white rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-primary/90">Создать курс</button>
+              <div className="flex gap-4">
+                <button 
+                  type="button" 
+                  onClick={() => setIsAddingCourse(false)}
+                  className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-slate-200 transition-all"
+                >
+                  Отмена
+                </button>
+                <button type="submit" className="flex-[2] py-4 bg-primary text-white rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-primary/90 shadow-lg shadow-primary/20">
+                  Создать курс
+                </button>
+              </div>
             </form>
           </motion.div>
         </div>
@@ -336,18 +443,92 @@ export default function TeacherDashboard() {
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-lg rounded-3xl p-8 shadow-2xl relative">
             <button onClick={() => setIsAddingLesson(false)} className="absolute top-6 right-6 text-slate-300 hover:text-primary"><X size={24} /></button>
             <h2 className="text-2xl font-black text-primary mb-6 uppercase tracking-tighter">Новый шаг обучения</h2>
-            <form onSubmit={handleCreateLesson} className="space-y-6">
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Заголовок урока</label>
-                <input required value={newLesson.title} onChange={e => setNewLesson({...newLesson, title: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-accent outline-none font-medium" />
+            <form onSubmit={handleCreateLesson} className="space-y-6 max-h-[70vh] overflow-y-auto pr-4 custom-scrollbar">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Заголовок урока</label>
+                  <input required value={newLesson.title} onChange={e => setNewLesson({...newLesson, title: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-accent outline-none font-medium" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Ссылка на видео</label>
+                  <input required value={newLesson.videoUrl} onChange={e => setNewLesson({...newLesson, videoUrl: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-accent outline-none font-medium" />
+                </div>
               </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Ссылка на видео</label>
-                <input required value={newLesson.videoUrl} onChange={e => setNewLesson({...newLesson, videoUrl: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-accent outline-none font-medium" />
+
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-black text-primary uppercase tracking-widest">Тесты к уроку</h3>
+                  <button type="button" onClick={handleAddTask} className="text-[10px] text-accent font-bold uppercase tracking-widest">+ Добавить вариант</button>
+                </div>
+                
+                {newLesson.tasks.map((task, idx) => (
+                  <div key={idx} className="p-4 bg-slate-50 rounded-2xl space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Вопрос #{idx+1}</span>
+                      <button type="button" onClick={() => {
+                        const tasks = [...newLesson.tasks];
+                        tasks.splice(idx, 1);
+                        setNewLesson({...newLesson, tasks});
+                      }} className="text-red-400 hover:text-red-600"><X size={14}/></button>
+                    </div>
+                    <input 
+                      placeholder="Введите вопрос..." 
+                      className="w-full px-4 py-3 bg-white border border-slate-100 rounded-xl outline-none focus:ring-1 focus:ring-accent text-sm"
+                      value={task.question}
+                      onChange={e => updateTask(idx, 'question', e.target.value)}
+                    />
+                        <div className="flex gap-2">
+                           {['a', 'b', 'c', 'd'].map(optLetter => {
+                             const opt = optLetter.toUpperCase();
+                             return (
+                               <input 
+                                 key={opt}
+                                 placeholder={`Вариант ${opt}`}
+                                 className="w-full px-3 py-2 bg-white border border-slate-100 rounded-lg outline-none text-xs"
+                                 value={(task as any)[`option_${optLetter}`]}
+                                 onChange={e => updateTask(idx, `option_${optLetter}`, e.target.value)}
+                               />
+                             );
+                           })}
+                        </div>
+                    <textarea 
+                      placeholder="Объяснение правильного решения (необязательно)..." 
+                      rows={2}
+                      className="w-full px-4 py-3 bg-white border border-slate-100 rounded-xl outline-none focus:ring-1 focus:ring-accent text-[10px] font-medium"
+                      value={task.explanation}
+                      onChange={e => updateTask(idx, 'explanation', e.target.value)}
+                    />
+                    <div className="flex items-center gap-4">
+                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Правильный ответ:</label>
+                       <div className="flex gap-2">
+                          {['A', 'B', 'C', 'D'].map(opt => (
+                            <button 
+                              key={opt}
+                              type="button"
+                              onClick={() => updateTask(idx, 'correct_answer', opt)}
+                              className={`w-8 h-8 rounded-lg font-bold text-xs transition-all ${task.correct_answer === opt ? 'bg-primary text-white' : 'bg-white text-slate-400'}`}
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                       </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <button type="submit" className="w-full py-4 bg-primary text-white rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-primary/90 flex items-center justify-center gap-2">
-                <Send size={16} /> Опубликовать шаг
-              </button>
+
+              <div className="flex gap-4">
+                <button 
+                  type="button" 
+                  onClick={() => setIsAddingLesson(false)}
+                  className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-slate-200 transition-all"
+                >
+                  Отмена
+                </button>
+                <button type="submit" className="flex-[2] py-4 bg-primary text-white rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-primary/90 flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+                  <Send size={16} /> Опубликовать урок
+                </button>
+              </div>
             </form>
           </motion.div>
         </div>

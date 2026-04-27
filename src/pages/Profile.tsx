@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { auth, db } from '../lib/firebase';
 import { signOut } from 'firebase/auth';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { getSubjectLabel } from '../constants';
 import { 
   User as UserIcon, 
   Award, 
@@ -136,7 +137,7 @@ export default function Profile() {
                   <p className="text-white/60 font-mono text-sm">ID: {user.id.slice(0, 8)}...</p>
                   {user.role === 'teacher' && (
                     <span className="bg-accent text-primary px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest">
-                      Учитель — {user.subject === 'math' ? 'Математика' : user.subject === 'logic' ? 'Логика' : user.subject === 'languages' ? 'Языки' : user.subject === 'reading' ? 'Анализ текста' : (user as any).subject || 'Общий'}
+                      Учитель — {getSubjectLabel((user as any).subject || 'general')}
                     </span>
                   )}
                 </div>
@@ -270,55 +271,57 @@ export default function Profile() {
         </div>
 
         {/* History */}
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden mb-8">
-          <div className="p-6 border-b border-slate-50 flex items-center justify-between">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <History size={20} className="text-primary" />
-              История активности
-            </h2>
-          </div>
+        {user.role !== 'teacher' && (
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden mb-8">
+            <div className="p-6 border-b border-slate-50 flex items-center justify-between">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <History size={20} className="text-primary" />
+                История активности
+              </h2>
+            </div>
 
-          <div className="divide-y divide-slate-50">
-            {loading ? (
-              [...Array(3)].map((_, i) => (
-                <div key={i} className="p-6 animate-pulse flex items-center gap-4">
-                  <div className="w-12 h-12 bg-slate-100 rounded-xl" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-slate-100 rounded w-1/3" />
-                    <div className="h-3 bg-slate-100 rounded w-1/4" />
-                  </div>
-                </div>
-              ))
-            ) : results.length > 0 ? (
-              results.map((res) => (
-                <div key={res.id} className="p-6 flex items-center gap-4 hover:bg-slate-50 transition-colors">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg
-                    ${(res.score / res.total_questions) >= 0.8 ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-600'}
-                  `}>
-                    {Math.round((res.score / res.total_questions) * 100)}%
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-bold text-slate-800">Урок завершен</div>
-                    <div className="text-sm text-slate-400 flex items-center gap-2">
-                      <Calendar size={12} />
-                      {res.completed_at?.toDate?.() ? res.completed_at.toDate().toLocaleDateString() : 'Недавно'}
+            <div className="divide-y divide-slate-50">
+              {loading ? (
+                [...Array(3)].map((_, i) => (
+                  <div key={i} className="p-6 animate-pulse flex items-center gap-4">
+                    <div className="w-12 h-12 bg-slate-100 rounded-xl" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-slate-100 rounded w-1/3" />
+                      <div className="h-3 bg-slate-100 rounded w-1/4" />
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-black text-primary">+{res.score} XP</div>
-                    <div className="text-xs font-bold text-slate-300">{res.score}/{res.total_questions} правильно</div>
+                ))
+              ) : results.length > 0 ? (
+                results.map((res) => (
+                  <div key={res.id} className="p-6 flex items-center gap-4 hover:bg-slate-50 transition-colors">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg
+                      ${(res.score / res.total_questions) >= 0.8 ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-600'}
+                    `}>
+                      {Math.round((res.score / res.total_questions) * 100)}%
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-bold text-slate-800">Урок завершен</div>
+                      <div className="text-sm text-slate-400 flex items-center gap-2">
+                        <Calendar size={12} />
+                        {res.completed_at?.toDate?.() ? res.completed_at.toDate().toLocaleDateString() : 'Недавно'}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-black text-primary">+{res.score} XP</div>
+                      <div className="text-xs font-bold text-slate-300">{res.score}/{res.total_questions} правильно</div>
+                    </div>
+                    <ChevronRight size={18} className="text-slate-300" />
                   </div>
-                  <ChevronRight size={18} className="text-slate-300" />
+                ))
+              ) : (
+                <div className="p-12 text-center text-slate-400">
+                  <Layers className="mx-auto mb-4 opacity-20" size={48} />
+                  <p>Вы еще не завершили ни одного урока.</p>
                 </div>
-              ))
-            ) : (
-              <div className="p-12 text-center text-slate-400">
-                <Layers className="mx-auto mb-4 opacity-20" size={48} />
-                <p>Вы еще не завершили ни одного урока.</p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

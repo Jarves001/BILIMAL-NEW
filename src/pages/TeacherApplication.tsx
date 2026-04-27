@@ -139,7 +139,9 @@ export default function TeacherApplication() {
               >
                 <option value="math">Математика</option>
                 <option value="logic">Логика & IQ</option>
-                <option value="languages">Языки</option>
+                <option value="kazakh">Казахский язык</option>
+                <option value="russian">Русский язык</option>
+                <option value="english">Английский язык</option>
                 <option value="reading">Анализ текста</option>
               </select>
             </div>

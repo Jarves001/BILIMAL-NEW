@@ -55,20 +55,21 @@ const QUIZ_DATA: Record<string, Question[]> = {
     { id: 19, question: "Если СИНИЙ = 2, ЗЕЛЕНЫЙ = 3, то КРАСНЫЙ = ?", options: ["2", "3", "4", "5"], correct: 0 },
     { id: 20, question: "Найдите следующую пару: AB, BC, CD, DE, __", options: ["EF", "FG", "GH", "HI"], correct: 0 },
   ],
-  languages: [
-    // Russian
+  russian: [
     { id: 1, question: "Укажи правильно написанное слово:", options: ["жи-раф", "жирав", "жираф", "жыраф"], correct: 2 },
     { id: 2, question: "Найди синоним к слову 'большой':", options: ["маленький", "огромный", "тихий", "быстрый"], correct: 1 },
     { id: 3, question: "Где допущена ошибка?", options: ["школа", "учитель", "учиник", "книга"], correct: 2 },
     { id: 4, question: "Выбери правильное окончание: 'Я чита__ книгу'", options: ["ет", "ю", "ем", "ишь"], correct: 1 },
     { id: 5, question: "Главная мысль предложения: 'Мальчик помог бабушке перейти дорогу.'", options: ["Мальчик играл", "Помощь старшим", "Он шел домой", "Был дождь"], correct: 1 },
-    // Kazakh
+  ],
+  kazakh: [
     { id: 6, question: "Дұрыс жазылған сөзді таңда:", options: ["мектеб", "мектеп", "мектепп", "мектепь"], correct: 1 },
     { id: 7, question: "'Үлкен' сөзінің синонимі:", options: ["кіші", "зор", "баяу", "ұзын"], correct: 1 },
     { id: 8, question: "Қай сөзде қате бар?", options: ["бала", "кітап", "окушы", "мұғалім"], correct: 2 },
     { id: 9, question: "Сөйлемді толықтыр: 'Мен мектепке ___'", options: ["барды", "барамын", "бардың", "бардысың"], correct: 1 },
     { id: 10, question: "'Бала анасына көмектесті' мәтінінің негізгі ойы:", options: ["Ойын", "Көмек", "Жүгіру", "Ұйықтау"], correct: 1 },
-    // English
+  ],
+  english: [
     { id: 11, question: "Choose the correct word:", options: ["scool", "school", "shool", "scol"], correct: 1 },
     { id: 12, question: "Synonym of 'big':", options: ["small", "large", "slow", "short"], correct: 1 },
     { id: 13, question: "Choose the correct sentence:", options: ["He go to school", "He goes to school", "He going school", "He gone school"], correct: 1 },

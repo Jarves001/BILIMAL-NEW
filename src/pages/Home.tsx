@@ -6,7 +6,9 @@ export default function Home() {
   const subjects = [
     { title: 'Математика', icon: <BookOpen className="text-accent" />, description: 'Углубленная программа НИШ/БИЛ', slug: 'math' },
     { title: 'Логика & IQ', icon: <Target className="text-accent" />, description: 'Решение нестандартных задач', slug: 'logic' },
-    { title: 'Языки', icon: <Award className="text-accent" />, description: 'Казахский, Русский, Английский', slug: 'languages' },
+    { title: 'Казахский язык', icon: <Award className="text-accent" />, description: 'Грамматика және мәтін талдау', slug: 'kazakh' },
+    { title: 'Русский язык', icon: <Award className="text-accent" />, description: 'Грамотность чтения и язык', slug: 'russian' },
+    { title: 'Английский язык', icon: <Award className="text-accent" />, description: 'Reading & Grammar skills', slug: 'english' },
     { title: 'Анализ текста', icon: <GraduationCap className="text-accent" />, description: 'Критическое чтение и понимание', slug: 'reading' },
   ];
 
@@ -50,7 +52,7 @@ export default function Home() {
           <div className="h-1 w-20 bg-accent mx-auto" />
         </div>
         
-        <div className="grid md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {subjects.map((subject, index) => (
             <motion.div
               key={index}

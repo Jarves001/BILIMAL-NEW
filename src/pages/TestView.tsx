@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import api from '../api/client';
+import { db } from '../lib/firebase';
+import { collection, getDocs, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { Timer, AlertTriangle, ArrowRight, CheckCircle, XCircle } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -33,17 +34,24 @@ export default function TestView() {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
 
   useEffect(() => {
-    api.get(`/lessons/${lessonId}/tasks`, { params: { courseId } })
-      .then(res => {
-        setTasks(res.data);
-        setIsLoading(false);
-      })
-      .catch(err => {
-        if (err.response?.status === 403) {
-          setErrorStatus(403);
+    async function fetchTasks() {
+      if (!lessonId || !courseId) return;
+      try {
+        const tasksSnap = await getDocs(collection(db, 'courses', courseId, 'lessons', lessonId, 'tasks'));
+        if (tasksSnap.empty) {
+          console.log('No tasks found in subcollection, checking global results? No, should be in subcollection.');
         }
+        const tasksData = tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+        setTasks(tasksData);
         setIsLoading(false);
-      });
+      } catch (err) {
+        console.error('Failed to fetch tasks from Firestore:', err);
+        setErrorStatus(500);
+        setIsLoading(false);
+      }
+    }
+
+    fetchTasks();
 
     const timer = setInterval(() => {
       setTimeLeft(prev => {
@@ -81,15 +89,16 @@ export default function TestView() {
     });
 
     try {
-      await api.post('/results', {
+      await addDoc(collection(db, 'results'), {
         user_id: user?.id,
         lesson_id: lessonId,
         course_id: courseId,
         score: finalScore,
-        total_questions: tasks.length
+        total_questions: tasks.length,
+        completed_at: serverTimestamp()
       });
     } catch (err) {
-      console.error('Failed to save result:', err);
+      console.error('Failed to save result to Firestore:', err);
     }
   };
 

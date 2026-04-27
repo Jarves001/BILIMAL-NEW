@@ -11,6 +11,7 @@ import {
   User as UserIcon
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { SUBJECTS } from '../constants';
 
 import Logo from './Logo';
 
@@ -23,15 +24,12 @@ export default function Sidebar() {
   const links = [
     { name: 'Портал', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Мой профиль', path: '/profile', icon: UserIcon },
-    { name: 'Настроить тариф', path: '/subscriptions', icon: Trophy },
+    ...(user?.role !== 'teacher' ? [{ name: 'Настроить тариф', path: '/subscriptions', icon: Trophy }] : []),
   ];
 
-  const subjects = [
-    { name: 'Математика', path: '/dashboard?subject=math' },
-    { name: 'Логика & IQ', path: '/dashboard?subject=logic' },
-    { name: 'Языки', path: '/dashboard?subject=languages' },
-    { name: 'Анализ текста', path: '/dashboard?subject=reading' },
-  ];
+  const subjects = user?.role === 'teacher' 
+    ? SUBJECTS.filter(s => s.id === (user as any).subject)
+    : SUBJECTS;
 
   return (
     <aside className="fixed inset-y-0 left-0 z-50 w-64 bg-primary text-white flex flex-col shrink-0 h-screen transition-transform -translate-x-full md:relative md:translate-x-0 overflow-hidden">

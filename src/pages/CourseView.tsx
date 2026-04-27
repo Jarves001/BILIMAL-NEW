@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import api from '../api/client';
+import { db } from '../lib/firebase';
+import { doc, getDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { useAuth } from '../hooks/useAuth';
 import { Play, ClipboardList, CheckCircle, ChevronRight, Lock } from 'lucide-react';
 
 interface Lesson {
-  id: number;
+  id: string;
   title: string;
   video_url: string;
   video_locked?: boolean;
 }
 
 interface Course {
-  id: number;
+  id: string;
   title: string;
   description: string;
   lessons: Lesson[];
@@ -20,18 +22,45 @@ interface Course {
 export default function CourseView() {
   const { id } = useParams();
   const [course, setCourse] = useState<Course | null>(null);
-
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get(`/courses/${id}`)
-      .then(res => setCourse(res.data))
-      .catch(err => {
-        if (err.response?.status === 403) {
-          navigate('/subscriptions');
+    async function fetchCourseData() {
+      if (!id) return;
+      try {
+        const courseDoc = await getDoc(doc(db, 'courses', id));
+        if (!courseDoc.exists()) {
+          console.error('Course not found');
+          return;
         }
-      });
-  }, [id, navigate]);
+
+        const lessonsQuery = query(
+          collection(db, 'courses', id, 'lessons'),
+          orderBy('order_index', 'asc')
+        );
+        const lessonsSnap = await getDocs(lessonsQuery);
+        
+        const sub = user?.subInfo || { has_video_access: user?.role === 'admin' || user?.role === 'teacher' };
+        
+        const lessonsData = lessonsSnap.docs.map(doc => {
+          const data = doc.data();
+          const isLocked = !sub.has_video_access && data.video_url && data.order_index > 1; // Example: lock video if no subscription
+          return { id: doc.id, ...data } as Lesson;
+        });
+
+        setCourse({
+          id: courseDoc.id,
+          ...courseDoc.data() as any,
+          lessons: lessonsData
+        });
+      } catch (err) {
+        console.error('Failed to fetch course details from Firestore:', err);
+      }
+    }
+
+    fetchCourseData();
+  }, [id, user]);
 
   if (!course) return <div className="p-20 text-center uppercase tracking-widest text-xs font-bold text-slate-400">Синхронизация данных курса...</div>;
 

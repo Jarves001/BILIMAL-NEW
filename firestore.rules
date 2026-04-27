@@ -67,10 +67,10 @@ service cloud.firestore {
     }
 
     function isValidTask(data) {
-      return data.keys().hasAll(['question', 'optionA', 'optionB', 'optionC', 'optionD', 'correctAnswer', 'explanation'])
+      return data.keys().hasAll(['question', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'explanation'])
           && data.keys().size() == 7
           && data.question is string && data.question.size() <= 1000
-          && data.correctAnswer in ['A', 'B', 'C', 'D']
+          && data.correct_answer in ['A', 'B', 'C', 'D']
           && data.explanation is string && data.explanation.size() <= 2000;
     }
 
@@ -108,7 +108,7 @@ service cloud.firestore {
     }
 
     match /users/{userId}/subscription/{docId} {
-      allow get: if isOwner(userId) || isAdmin();
+      allow get, list: if isOwner(userId) || isAdmin();
       allow create, update, delete: if isAdmin();
     }
 
