@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { auth, db } from '../lib/firebase';
 import { signOut } from 'firebase/auth';
@@ -120,36 +121,59 @@ export default function Profile() {
             <div className="w-24 h-24 bg-accent rounded-full flex items-center justify-center border-4 border-white/20">
               <UserIcon size={48} className="text-primary" />
             </div>
-            <div className="absolute -bottom-2 -right-2 bg-yellow-400 text-primary w-10 h-10 rounded-full flex items-center justify-center font-black border-2 border-primary shadow-lg">
-              {stats.level}
-            </div>
+            {user.role !== 'teacher' && (
+              <div className="absolute -bottom-2 -right-2 bg-yellow-400 text-primary w-10 h-10 rounded-full flex items-center justify-center font-black border-2 border-primary shadow-lg">
+                {stats.level}
+              </div>
+            )}
           </div>
           
           <div className="text-center md:text-left flex-1">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h1 className="text-3xl font-black tracking-tight mb-1">{user.name}</h1>
-                <p className="text-white/60 font-mono text-sm mb-4">ID: {user.id.slice(0, 8)}...</p>
+                <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
+                  <p className="text-white/60 font-mono text-sm">ID: {user.id.slice(0, 8)}...</p>
+                  {user.role === 'teacher' && (
+                    <span className="bg-accent text-primary px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest">
+                      Учитель — {user.subject === 'math' ? 'Математика' : user.subject === 'logic' ? 'Логика' : user.subject === 'languages' ? 'Языки' : user.subject === 'reading' ? 'Анализ текста' : (user as any).subject || 'Общий'}
+                    </span>
+                  )}
+                </div>
               </div>
-              <button 
-                onClick={handleLogout}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl text-sm font-bold uppercase tracking-widest transition-all"
-              >
-                <LogOut size={18} />
-                Выйти
-              </button>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                {(user.role === 'admin' || user.role === 'teacher') && (
+                  <Link 
+                    to={user.role === 'admin' ? '/admin' : '/teacher'}
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-accent text-primary rounded-2xl text-sm font-bold uppercase tracking-widest transition-all hover:scale-105"
+                  >
+                    Администрация
+                  </Link>
+                )}
+                <button 
+                  onClick={handleLogout}
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl text-sm font-bold uppercase tracking-widest transition-all"
+                >
+                  <LogOut size={18} />
+                  Выйти
+                </button>
+              </div>
             </div>
             
-            <div className="w-full max-w-sm bg-white/10 h-3 rounded-full overflow-hidden mb-2">
-              <div 
-                className="h-full bg-accent transition-all duration-1000" 
-                style={{ width: `${((100 - stats.xpToNext) / 100) * 100}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-xs font-bold text-white/50 uppercase tracking-wider">
-              <span>Уровень {stats.level}</span>
-              <span>{stats.xpToNext} XP до Уровня {stats.level + 1}</span>
-            </div>
+            {user.role !== 'teacher' && (
+              <>
+                <div className="w-full max-w-sm bg-white/10 h-3 rounded-full overflow-hidden mb-2">
+                  <div 
+                    className="h-full bg-accent transition-all duration-1000" 
+                    style={{ width: `${((100 - stats.xpToNext) / 100) * 100}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-xs font-bold text-white/50 uppercase tracking-wider">
+                  <span>Уровень {stats.level}</span>
+                  <span>{stats.xpToNext} XP до Уровня {stats.level + 1}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -215,7 +239,7 @@ export default function Profile() {
         )}
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {[
+          {user.role !== 'teacher' ? [
             { label: 'Очки (XP)', value: stats.totalScore, icon: <Star className="text-yellow-500" /> },
             { label: 'Уроки', value: stats.lessonsCompleted, icon: <Layers className="text-blue-500" /> },
             { label: 'Точность', value: `${stats.averageAccuracy}%`, icon: <Trophy className="text-orange-500" /> },
@@ -232,7 +256,17 @@ export default function Profile() {
               <div className="text-xl font-black text-slate-800">{stat.value}</div>
               <div className="text-xs font-bold text-slate-400 uppercase tracking-tighter">{stat.label}</div>
             </motion.div>
-          ))}
+          )) : (
+            <div className="col-span-4 bg-white p-6 rounded-3xl border border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-black text-primary uppercase tracking-tighter">Активность преподавателя</h3>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Вы помогаете ученикам достигать целей</p>
+              </div>
+              <div className="bg-accent/10 px-4 py-2 rounded-2xl">
+                <span className="text-primary font-black text-sm">Status: Active</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* History */}

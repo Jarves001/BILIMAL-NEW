@@ -34,7 +34,11 @@ export default function TeacherDashboard() {
     async function fetchData() {
       if (!user) return;
       try {
-        const coursesSnap = await getDocs(query(collection(db, 'courses'), where('teacher_id', '==', user.id)));
+        const q = user.role === 'admin' 
+          ? collection(db, 'courses')
+          : query(collection(db, 'courses'), where('teacher_id', '==', user.id));
+        
+        const coursesSnap = await getDocs(q);
         const coursesList = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         setCourses(coursesList);
 
@@ -64,7 +68,7 @@ export default function TeacherDashboard() {
       }
     }
 
-    if (user?.role === 'teacher') {
+    if (user?.role === 'teacher' || user?.role === 'admin') {
       fetchData();
     }
   }, [user]);
@@ -75,7 +79,7 @@ export default function TeacherDashboard() {
       try {
         const snap = await getDocs(query(collection(db, `courses/${selectedCourse.id}/lessons`)));
         const lessonsList = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
-        setLessons(lessonsList.sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0)));
+        setLessons(lessonsList.sort((a, b) => (a.order_index || 0) - (b.order_index || 0)));
       } catch (err) {
         console.error('Error fetching lessons:', err);
       }
