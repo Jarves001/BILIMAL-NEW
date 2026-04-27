@@ -68,22 +68,33 @@ export default function AdminDashboard() {
   }, [user]);
 
   const handleApprove = async (app: any) => {
+    if (!app || !app.id || !app.user_id) {
+      console.error('Invalid application data:', app);
+      alert('Ошибка: Данные заявки неполные');
+      return;
+    }
+    
+    console.log('Approving teacher application:', app.id, 'for user:', app.user_id);
+    
     try {
       // 1. Update application status
-      await updateDoc(doc(db, 'teacher_applications', app.id), { status: 'approved' });
+      const appRef = doc(db, 'teacher_applications', app.id);
+      await updateDoc(appRef, { status: 'approved' });
       
       // 2. Update user role and subject
-      await updateDoc(doc(db, 'users', app.user_id), { 
+      const userRef = doc(db, 'users', app.user_id);
+      await updateDoc(userRef, { 
         role: 'teacher',
-        subject: app.subject,
+        subject: app.subject || 'general',
         teacherStatus: 'active'
       });
       
       // Update local state
       setApplications(prev => prev.map(a => a.id === app.id ? { ...a, status: 'approved' } : a));
-      // Refresh user lists could be done but for now just updating UI
+      alert('Учитель успешно одобрен!');
     } catch (err) {
       console.error('Error approving teacher:', err);
+      alert('Ошибка при одобрении: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'));
     }
   };
 

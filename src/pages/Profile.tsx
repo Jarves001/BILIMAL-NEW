@@ -10,7 +10,10 @@ import {
   ChevronRight, 
   Calendar,
   Layers,
-  Star
+  Star,
+  CheckCircle,
+  Clock,
+  AlertCircle
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -27,6 +30,7 @@ export default function Profile() {
   const { user } = useAuth();
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(true);
+  const [application, setApplication] = useState<any>(null);
   const [stats, setStats] = useState({
     totalScore: 0,
     lessonsCompleted: 0,
@@ -73,7 +77,25 @@ export default function Profile() {
       }
     }
 
+    async function fetchApplication() {
+      try {
+        const q = query(
+          collection(db, 'teacher_applications'),
+          where('user_id', '==', user?.id),
+          orderBy('applied_at', 'desc'),
+          limit(1)
+        );
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          setApplication({ id: snap.docs[0].id, ...snap.docs[0].data() });
+        }
+      } catch (err) {
+        console.error('Failed to fetch application:', err);
+      }
+    }
+
     fetchHistory();
+    fetchApplication();
   }, [user]);
 
   if (!user) return null;
@@ -112,6 +134,52 @@ export default function Profile() {
 
       {/* Stats Grid */}
       <div className="max-w-4xl mx-auto px-4 -mt-12">
+        {/* Application Status Section */}
+        {application && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`mb-6 p-6 rounded-3xl border shadow-sm ${
+              application.status === 'pending' ? 'bg-amber-50 border-amber-200' : 
+              application.status === 'approved' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                application.status === 'pending' ? 'bg-amber-100 text-amber-600' : 
+                application.status === 'approved' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+              }`}>
+                {application.status === 'pending' ? <Clock size={24} /> : 
+                 application.status === 'approved' ? <CheckCircle size={24} /> : <AlertCircle size={24} />}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <h4 className={`font-black text-sm uppercase tracking-tight ${
+                    application.status === 'pending' ? 'text-amber-800' : 
+                    application.status === 'approved' ? 'text-green-800' : 'text-red-800'
+                  }`}>
+                    {application.status === 'pending' ? 'Заявка на роль учителя: В обработке' : 
+                     application.status === 'approved' ? 'Принято: Вы стали учителем!' : 'Заявка отклонена'}
+                  </h4>
+                  <span className="text-[10px] font-bold text-slate-400">
+                    {application.applied_at && new Date(application.applied_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <p className={`text-xs mt-1 ${
+                  application.status === 'pending' ? 'text-amber-600' : 
+                  application.status === 'approved' ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {application.status === 'pending' 
+                    ? 'Ваша заявка проверяется администрацией. Обычно это занимает от 1 до 3 рабочих дней.' 
+                    : application.status === 'approved' 
+                    ? 'Поздравляем! Вам теперь доступен кабинет преподавателя. Подробнее уточнения вам напишут с администрации и номер для связи 77474193512'
+                    : 'К сожалению, ваша заявка была отклонена. Вы можете попробовать подать заявку снова позже или связаться с поддержкой.'}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
             { label: 'Очки (XP)', value: stats.totalScore, icon: <Star className="text-yellow-500" /> },

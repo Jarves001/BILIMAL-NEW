@@ -2,9 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/client';
 import { db } from '../lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
-import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX, Trophy, Target } from 'lucide-react';
+import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX, Trophy, Target, MessageSquare, AlertCircle, CheckCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface Course {
@@ -19,6 +19,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const subjectFilter = searchParams.get('subject');
+  const [application, setApplication] = useState<any>(null);
   
   const [userStats, setUserStats] = useState({
     totalScore: 0,
@@ -51,7 +52,25 @@ export default function Dashboard() {
       }
     }
 
+    async function fetchApplication() {
+      try {
+        const q = query(
+          collection(db, 'teacher_applications'), 
+          where('user_id', '==', user?.id),
+          orderBy('applied_at', 'desc'),
+          limit(1)
+        );
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          setApplication({ id: snap.docs[0].id, ...snap.docs[0].data() });
+        }
+      } catch (err) {
+        console.error('Failed to fetch application:', err);
+      }
+    }
+
     fetchStats();
+    fetchApplication();
     
     api.get('/courses').then(res => {
       // Ensure unique courses by ID and filter out any invalid data
@@ -90,6 +109,41 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 pb-20 md:pb-0">
+      {/* Application Status */}
+      {application && application.status !== 'rejected' && (
+        <div className={`p-6 rounded-3xl border flex items-center gap-4 ${
+          application.status === 'pending' ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'
+        }`}>
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+            application.status === 'pending' ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'
+          }`}>
+            {application.status === 'pending' ? <Clock size={24} /> : <CheckCircle size={24} />}
+          </div>
+          <div className="flex-1">
+            <h4 className={`font-black text-sm uppercase tracking-tight ${
+              application.status === 'pending' ? 'text-amber-800' : 'text-green-800'
+            }`}>
+              {application.status === 'pending' ? 'Заявка на роль учителя в обработке' : 'Принято, вы стали учителем!'}
+            </h4>
+            <p className={`text-xs mt-1 ${
+              application.status === 'pending' ? 'text-amber-600' : 'text-green-600'
+            }`}>
+              {application.status === 'pending' 
+                ? 'Ваша заявка проверяется администрацией. Обычно это занимает от 1 до 3 рабочих дней.' 
+                : 'Подробнее уточнения вам напишут с администрации и номер для связи 77474193512'}
+            </p>
+          </div>
+          {application.status === 'approved' && user?.role !== 'teacher' && (
+             <button 
+               onClick={() => window.location.reload()}
+               className="bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest"
+             >
+               Обновить роль
+             </button>
+          )}
+        </div>
+      )}
+
       {/* Level Header (Mobile Focused) */}
       <div className="md:hidden bg-primary text-white p-6 rounded-3xl mb-4 relative overflow-hidden">
         <div className="relative z-10">
@@ -217,6 +271,22 @@ export default function Dashboard() {
             </p>
             <button className="w-full py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-xs font-bold uppercase tracking-widest transition-all">
               Посмотреть план
+            </button>
+          </div>
+
+          <div className="bg-white border p-6 shadow-sm rounded-3xl md:rounded-none">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
+              <MessageSquare size={16} className="text-accent" />
+              Связь с учителем
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed mb-6">
+              У вас возникли вопросы по материалу? Вы можете задать их напрямую своему куратору или преподавателю курса.
+            </p>
+            <button 
+              onClick={() => alert('Функция чата в разработке. Скоро вы сможете общаться с учителями!')}
+              className="w-full py-3 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold uppercase tracking-widest transition-all text-primary"
+            >
+              Создать чат
             </button>
           </div>
         </div>

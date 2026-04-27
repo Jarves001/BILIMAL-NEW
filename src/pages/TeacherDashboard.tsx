@@ -295,7 +295,7 @@ export default function TeacherDashboard() {
                       </td>
                       <td className="px-6 py-5">
                          <button className="text-[10px] bg-slate-100 px-3 py-1.5 rounded-lg font-bold uppercase tracking-widest text-slate-500 hover:bg-primary hover:text-white transition-all">
-                           Отчет
+                           Детали
                          </button>
                       </td>
                     </tr>
