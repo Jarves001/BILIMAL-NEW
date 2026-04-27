@@ -19,14 +19,16 @@ export default function Login() {
       await loginEmail(email, password);
       navigate('/dashboard');
     } catch (err: any) {
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+      console.error('Login error details:', err);
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('Неверный email или пароль');
       } else if (err.code === 'auth/invalid-email') {
         setError('Некорректный формат email');
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Слишком много попыток входа. Попробуйте позже.');
       } else {
-        setError('Ошибка при входе. Проверьте данные.');
+        setError(`Ошибка при входе: ${err.message || 'Проверьте данные.'}`);
       }
-      console.error(err);
     } finally {
       setIsLoggingIn(false);
     }
