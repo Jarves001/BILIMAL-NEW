@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { db } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
+import { signOut } from 'firebase/auth';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { 
   User as UserIcon, 
@@ -13,7 +14,8 @@ import {
   Star,
   CheckCircle,
   Clock,
-  AlertCircle
+  AlertCircle,
+  LogOut
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -98,6 +100,14 @@ export default function Profile() {
     fetchApplication();
   }, [user]);
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -115,8 +125,19 @@ export default function Profile() {
           </div>
           
           <div className="text-center md:text-left flex-1">
-            <h1 className="text-3xl font-black tracking-tight mb-1">{user.name}</h1>
-            <p className="text-white/60 font-mono text-sm mb-4">ID: {user.id.slice(0, 8)}...</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-black tracking-tight mb-1">{user.name}</h1>
+                <p className="text-white/60 font-mono text-sm mb-4">ID: {user.id.slice(0, 8)}...</p>
+              </div>
+              <button 
+                onClick={handleLogout}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl text-sm font-bold uppercase tracking-widest transition-all"
+              >
+                <LogOut size={18} />
+                Выйти
+              </button>
+            </div>
             
             <div className="w-full max-w-sm bg-white/10 h-3 rounded-full overflow-hidden mb-2">
               <div 
