@@ -18,10 +18,14 @@ import {
   Pencil,
   Image as ImageIcon,
   Upload,
-  Clipboard
+  Clipboard,
+  Sparkles,
+  Timer,
+  BookMarked
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSubjectLabel, SUBJECTS } from '../constants';
+// import { GoogleGenAI } from "@google/genai";
 
 const compressImage = (file: File | Blob): Promise<string> => {
   return new Promise((resolve) => {
@@ -73,6 +77,15 @@ export default function TeacherDashboard() {
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [isAddingLesson, setIsAddingLesson] = useState(false);
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
+  const [exams, setExams] = useState<any[]>([]);
+  const [isAddingExam, setIsAddingExam] = useState(false);
+  const [isParsingText, setIsParsingText] = useState(false);
+  const [rawExamText, setRawExamText] = useState('');
+  const [newExam, setNewExam] = useState({
+    title: '',
+    duration_minutes: 60,
+    questions: [] as any[]
+  });
   const [newCourse, setNewCourse] = useState({ title: '', description: '' });
   const [newLesson, setNewLesson] = useState({ 
     title: '', 
@@ -314,6 +327,30 @@ export default function TeacherDashboard() {
     return () => unsubscribe();
   }, [courses, loading]);
 
+  useEffect(() => {
+    if (!user || (user.role !== 'teacher' && user.role !== 'admin')) return;
+    
+    // Normalize subject
+    const subjectId = (user.subject || 'general').toLowerCase();
+    const subjectObj = SUBJECTS.find(s => s.id === subjectId || s.name.toLowerCase() === subjectId);
+    const normalizedSubject = subjectObj ? subjectObj.id : subjectId;
+
+    const unsubscribe = onSnapshot(collection(db, 'exams'), (snap) => {
+      const allExams = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+      const filtered = user.role === 'admin' 
+        ? allExams 
+        : allExams.filter(e => {
+            const examSub = (e.subject || '').toLowerCase();
+            const examSubObj = SUBJECTS.find(s => s.id === examSub || s.name.toLowerCase() === examSub);
+            const normalizedExamSub = examSubObj ? examSubObj.id : examSub;
+            return normalizedExamSub === normalizedSubject;
+          });
+      setExams(filtered);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
   // Helper to fetch details for a selected student results
   const fetchResultDetails = async (studentResults: any[]) => {
     const enriched = [];
@@ -329,6 +366,118 @@ export default function TeacherDashboard() {
       }
     }
     return enriched;
+  };
+
+  const handleParseExamText = () => {
+    if (!rawExamText.trim()) return;
+    setIsParsingText(true);
+    
+    try {
+      // Manual parsing logic
+      // Split by numbers like "1.", "2.", etc. at the start of lines
+      const questionsData: any[] = [];
+      const blocks = rawExamText.split(/\n\s*\d+[\.\)]\s*/);
+      
+      for (const block of blocks) {
+        if (!block.trim()) continue;
+        
+        const lines = block.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        if (lines.length < 2) continue;
+
+        let question = '';
+        let options: Record<string, string> = { A: '', B: '', C: '', D: '' };
+        let correctAnswer = '';
+
+        // First line is usually the question text
+        question = lines[0];
+
+        // Look for options A, B, C, D and Answer
+        lines.forEach(line => {
+          const optMatch = line.match(/^([A-Da-d])[\)\.\-\s]+(.*)/);
+          if (optMatch) {
+            const letter = optMatch[1].toUpperCase();
+            options[letter] = optMatch[2].trim();
+          }
+
+          const ansMatch = line.match(/(?:Ответ|Answer|Correct)[:\s]*([A-Da-d])/i);
+          if (ansMatch) {
+            correctAnswer = ansMatch[1].toUpperCase();
+          }
+        });
+
+        // If and only if we found content, add it
+        if (question && options.A) {
+          questionsData.push({
+            question,
+            option_a: options.A,
+            option_b: options.B,
+            option_c: options.C,
+            option_d: options.D,
+            correct_answer: correctAnswer || 'A',
+            explanation: '',
+            type: 'choice'
+          });
+        }
+      }
+
+      if (questionsData.length > 0) {
+        setNewExam(prev => ({
+          ...prev,
+          questions: questionsData
+        }));
+        setRawExamText('');
+      } else {
+        alert('Не удалось распознать вопросы. Убедитесь, что текст соответствует формату: \n1. Вопрос \nA) Вариант B) Вариант... \nОтвет: A');
+      }
+    } catch (err) {
+      console.error('Error parsing exam text:', err);
+      alert('Ошибка при разборе текста.');
+    } finally {
+      setIsParsingText(false);
+    }
+  };
+
+  const handleCreateExam = async () => {
+    if (!newExam.title || newExam.questions.length === 0) {
+      alert('Заполните название и добавьте хотя бы один вопрос');
+      return;
+    }
+
+    try {
+      const examData = {
+        title: newExam.title,
+        subject: user.subject,
+        teacher_id: user.id,
+        duration_minutes: newExam.duration_minutes,
+        questions_count: newExam.questions.length,
+        created_at: new Date().toISOString()
+      };
+
+      const examRef = await addDoc(collection(db, 'exams'), examData);
+      
+      // Save questions in subcollection
+      for (const q of newExam.questions) {
+        await addDoc(collection(db, `exams/${examRef.id}/questions`), q);
+      }
+
+      setIsAddingExam(false);
+      setNewExam({ title: '', duration_minutes: 60, questions: [] });
+      alert('Экзамен успешно создан!');
+    } catch (err) {
+      console.error('Error creating exam:', err);
+      alert('Ошибка при создании экзамена');
+    }
+  };
+
+  const handleDeleteExam = async (examId: string, e: MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm('Вы уверены, что хотите удалить этот экзамен?')) return;
+    try {
+      await deleteDoc(doc(db, 'exams', examId));
+      setExams(exams.filter(e => e.id !== examId));
+    } catch (err) {
+      console.error('Error deleting exam:', err);
+    }
   };
 
   useEffect(() => {
@@ -485,18 +634,28 @@ export default function TeacherDashboard() {
             Предмет: {(user.subject ? getSubjectLabel(user.subject) : 'Не назначен').toUpperCase()}
           </p>
         </div>
-        <button 
-          onClick={() => setIsAddingCourse(true)}
-          className="bg-primary text-white px-6 py-4 rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-primary/90 shadow-xl transition-all"
-        >
-          <Plus size={18} />
-          Создать новый курс
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => setIsAddingExam(true)}
+            className="bg-accent text-primary px-6 py-4 rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:scale-105 shadow-xl transition-all"
+          >
+            <Sparkles size={18} />
+            Создать еженедельный экзамен
+          </button>
+          <button 
+            onClick={() => setIsAddingCourse(true)}
+            className="bg-primary text-white px-6 py-4 rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-primary/90 shadow-xl transition-all"
+          >
+            <Plus size={18} />
+            Создать новый курс
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-4 border-b border-slate-200 overflow-x-auto no-scrollbar">
         {[
           { id: 'content', label: 'Контент', icon: Layout },
+          { id: 'exams', label: 'Экзамены', icon: BookMarked },
           { id: 'students', label: 'Ученики', icon: Users },
           { id: 'chat', label: 'Чат', icon: Send },
           { id: 'stats', label: 'Статистика', icon: BarChart3 }
@@ -518,6 +677,63 @@ export default function TeacherDashboard() {
       </div>
 
       <AnimatePresence mode="wait">
+        {activeTab === 'exams' && (
+          <motion.div 
+            key="exams-grid"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
+            {exams.map(exam => (
+              <div 
+                key={exam.id} 
+                className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col group"
+              >
+                <div className="h-32 bg-accent/5 flex items-center justify-center border-b border-slate-100">
+                  <BookMarked className="text-accent/40" size={48} />
+                </div>
+                <div className="p-6 flex-1 flex flex-col">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-black text-primary line-clamp-1">{exam.title}</h3>
+                    <span className="bg-accent/10 text-accent px-2 py-1 rounded text-[10px] font-bold">EXAM</span>
+                  </div>
+                  <div className="space-y-2 mb-6 flex-1">
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                       <Clipboard size={12} /> {exam.questions_count} вопросов
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                       <Timer size={12} /> {exam.duration_minutes} минут
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <button 
+                      onClick={(e) => handleDeleteExam(exam.id, e)}
+                      className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white transition-all shadow-sm"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
+                      Еженедельный запуск
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {exams.length === 0 && (
+              <div className="col-span-full py-20 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                <BookMarked className="mx-auto text-slate-200 mb-4" size={48} />
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">У вас еще нет созданных экзаменов</p>
+                <button 
+                  onClick={() => setIsAddingExam(true)}
+                  className="mt-4 text-accent font-black uppercase text-[10px] tracking-widest hover:underline"
+                >
+                  Создать первый экзамен
+                </button>
+              </div>
+            )}
+          </motion.div>
+        )}
+
         {activeTab === 'content' && !selectedCourse && (
           <motion.div 
             key="courses-grid"
@@ -1164,6 +1380,133 @@ export default function TeacherDashboard() {
           </motion.div>
         </div>
       )}
+      {/* Add Exam Modal */}
+      {isAddingExam && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-primary/40 backdrop-blur-sm">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[40px] shadow-2xl p-8 md:p-12 relative"
+          >
+            <button 
+              onClick={() => setIsAddingExam(false)}
+              className="absolute top-8 right-8 w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
+            >
+              <X size={24} />
+            </button>
+
+            <div className="mb-10">
+              <h2 className="text-3xl font-black text-primary uppercase tracking-tighter mb-2">Создать новый экзамен</h2>
+              <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">Еженедельное тестирование для учеников</p>
+            </div>
+
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-primary mb-3">Название экзамена</label>
+                  <input 
+                    type="text" 
+                    value={newExam.title}
+                    onChange={(e) => setNewExam({...newExam, title: e.target.value})}
+                    placeholder="Напр: Итоговый тест по математике"
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 font-bold text-primary placeholder:text-slate-300 focus:border-accent focus:outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-primary mb-3">Длительность (минуты)</label>
+                  <input 
+                    type="number" 
+                    value={newExam.duration_minutes}
+                    onChange={(e) => setNewExam({...newExam, duration_minutes: parseInt(e.target.value)})}
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 font-bold text-primary focus:border-accent focus:outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-primary/5 p-8 rounded-[30px] border border-primary/10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center text-primary">
+                    <Sparkles size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-primary uppercase tracking-tight">Умный разбор теста</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Вставьте текст с вопросами и вариантами</p>
+                  </div>
+                </div>
+
+                <textarea
+                  value={rawExamText}
+                  onChange={(e) => setRawExamText(e.target.value)}
+                  placeholder="Вставьте сюда вопросы (напр: 1. Какой корень из 16? A) 2 B) 4 C) 8 D) 16 Ответ: B)"
+                  className="w-full h-48 bg-white border-2 border-primary/5 rounded-2xl p-6 font-medium text-slate-600 focus:border-accent focus:outline-none transition-all resize-none mb-4"
+                />
+
+                <button
+                  onClick={handleParseExamText}
+                  disabled={isParsingText || !rawExamText.trim()}
+                  className="w-full py-4 bg-primary text-white rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-primary/90 disabled:opacity-50 transition-all shadow-lg"
+                >
+                  {isParsingText ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Clipboard size={18} />
+                      Разобрать текст
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {newExam.questions.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-black text-primary uppercase tracking-tight">Подготовленные вопросы ({newExam.questions.length})</h3>
+                    <button 
+                      onClick={() => setNewExam({...newExam, questions: []})}
+                      className="text-[10px] font-bold uppercase tracking-widest text-red-400 hover:underline"
+                    >
+                      Очистить все
+                    </button>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                    {newExam.questions.map((q: any, idx: number) => (
+                      <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-start gap-4">
+                        <div className="bg-primary text-white w-6 h-6 rounded flex items-center justify-center text-[10px] font-black shrink-0">{idx + 1}</div>
+                        <div className="flex-1">
+                          <p className="font-bold text-primary text-sm mb-1">{q.question}</p>
+                          <div className="grid grid-cols-2 gap-2">
+                             <div className={`text-[10px] ${q.correct_answer === 'A' ? 'text-accent font-bold' : 'text-slate-400'}`}>A: {q.option_a}</div>
+                             <div className={`text-[10px] ${q.correct_answer === 'B' ? 'text-accent font-bold' : 'text-slate-400'}`}>B: {q.option_b}</div>
+                             <div className={`text-[10px] ${q.correct_answer === 'C' ? 'text-accent font-bold' : 'text-slate-400'}`}>C: {q.option_c}</div>
+                             <div className={`text-[10px] ${q.correct_answer === 'D' ? 'text-accent font-bold' : 'text-slate-400'}`}>D: {q.option_d}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-4 border-t border-slate-100 flex justify-end gap-4">
+                <button 
+                  onClick={() => setIsAddingExam(false)}
+                  className="px-8 py-4 font-bold uppercase tracking-widest text-xs text-slate-400 hover:text-slate-600 transition-all"
+                >
+                  Отмена
+                </button>
+                <button 
+                  onClick={handleCreateExam}
+                  disabled={newExam.questions.length === 0}
+                  className="bg-accent text-primary px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 shadow-xl transition-all"
+                >
+                  Сохранить экзамен
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {selectedStudent && (
         <div className="fixed inset-0 bg-primary/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-2xl rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-hidden flex flex-col">

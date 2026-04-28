@@ -98,6 +98,33 @@
         "applied_at": { "type": "string", "format": "date-time" }
       },
       "required": ["user_id", "name", "education", "experience", "phone", "subject", "status"]
+    },
+    "Exam": {
+      "title": "Weekly Exam",
+      "description": "A comprehensive weekly exam created by a teacher",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "subject": { "type": "string" },
+        "teacher_id": { "type": "string" },
+        "questions_count": { "type": "number" },
+        "duration_minutes": { "type": "number" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "subject", "teacher_id", "questions_count", "duration_minutes"]
+    },
+    "ExamResult": {
+      "title": "Exam Result",
+      "description": "Result of a student taking an exam",
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string" },
+        "exam_id": { "type": "string" },
+        "score": { "type": "number" },
+        "total_questions": { "type": "number" },
+        "completed_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["user_id", "exam_id", "score", "total_questions", "completed_at"]
     }
   },
   "firestore": {
@@ -124,6 +151,18 @@
     "/courses/{courseId}/lessons/{lessonId}/tasks/{taskId}": {
       "schema": "Task",
       "description": "Tasks in a lesson"
+    },
+    "/exams/{examId}": {
+      "schema": "Exam",
+      "description": "Weekly exams"
+    },
+    "/exams/{examId}/questions/{questionId}": {
+      "schema": "Task",
+      "description": "Questions within an exam"
+    },
+    "/exam_results/{resultId}": {
+      "schema": "ExamResult",
+      "description": "Results for weekly exams"
     },
     "/results/{resultId}": {
       "schema": "Result",

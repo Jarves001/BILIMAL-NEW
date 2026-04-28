@@ -97,6 +97,25 @@ service cloud.firestore {
           && (data.completed_at == request.time || data.completed_at is string || data.completed_at is timestamp);
     }
 
+    function isValidExam(data) {
+      return data.keys().hasAll(['title', 'subject', 'teacher_id', 'questions_count', 'duration_minutes', 'created_at'])
+          && data.keys().size() >= 6
+          && data.title is string && data.title.size() <= 200
+          && data.subject is string && data.subject.size() <= 100
+          && data.teacher_id == request.auth.uid
+          && data.questions_count is number && data.questions_count > 0
+          && data.duration_minutes is number && data.duration_minutes > 0;
+    }
+
+    function isValidExamResult(data) {
+      return data.keys().hasAll(['user_id', 'exam_id', 'score', 'total_questions', 'completed_at'])
+          && data.keys().size() >= 5
+          && data.user_id == request.auth.uid
+          && data.exam_id is string
+          && data.score is number && data.score >= 0
+          && (data.completed_at == request.time || data.completed_at is string || data.completed_at is timestamp);
+    }
+
     function isValidSubscription(data) {
       return data.keys().hasAll(['user_id', 'plan', 'price', 'start_date', 'end_date', 'exams_left', 'has_video_access', 'has_ai_chat'])
           && data.keys().size() == 8
@@ -156,6 +175,26 @@ service cloud.firestore {
       allow list: if isSignedIn() && (isAdmin() || isTeacher());
       allow get: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin() || isTeacher());
       allow create: if isSignedIn() && isValidResult(incoming());
+      allow update, delete: if isAdmin();
+    }
+
+    match /exams/{examId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if (isAdmin() || isTeacher()) && isValidExam(incoming());
+      allow update, delete: if isAdmin() || (isTeacher() && existing().teacher_id == request.auth.uid);
+
+      match /questions/{questionId} {
+        allow get: if isSignedIn();
+        allow list: if isSignedIn();
+        allow create, update, delete: if isAdmin() || isTeacher();
+      }
+    }
+
+    match /exam_results/{resultId} {
+      allow list: if isSignedIn() && (isAdmin() || isTeacher());
+      allow get: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin() || isTeacher());
+      allow create: if isSignedIn() && isValidExamResult(incoming());
       allow update, delete: if isAdmin();
     }
 

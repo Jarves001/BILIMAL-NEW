@@ -4,7 +4,7 @@ import api from '../api/client';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, limit, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
-import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX, Trophy, Target, MessageSquare, AlertCircle, CheckCircle, X, Send, Play, Book } from 'lucide-react';
+import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX, Trophy, Target, MessageSquare, AlertCircle, CheckCircle, X, Send, Play, Book, BookMarked, Timer } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSubjectLabel, SUBJECTS } from '../constants';
 
@@ -17,6 +17,7 @@ interface Course {
 
 export default function Dashboard() {
   const [courses, setCourses] = useState<Course[]>([]);
+  const [exams, setExams] = useState<any[]>([]);
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const subjectFilter = searchParams.get('subject');
@@ -160,6 +161,22 @@ export default function Dashboard() {
     };
 
     fetchCourses();
+
+    // Fetch Exams
+    const fetchExams = async () => {
+      try {
+        const q = query(collection(db, 'exams'), orderBy('created_at', 'desc'));
+        const unsubscribe = onSnapshot(q, (snap) => {
+          const examData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setExams(examData);
+        });
+        return unsubscribe;
+      } catch (err) {
+        console.error('Failed to fetch exams:', err);
+      }
+    };
+
+    fetchExams();
   }, [user]);
 
   const filteredCourses = useMemo(() => {
@@ -273,6 +290,44 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
+          {/* Main Course Listing */}
+          <div className="bg-white border shadow-sm mb-8">
+            <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+              <h3 className="text-sm font-bold uppercase tracking-tight text-primary flex items-center gap-2">
+                <BookMarked size={16} className="text-accent" />
+                Еженедельные экзамены
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-slate-100">
+              {exams.length > 0 ? exams.map(exam => (
+                <div key={exam.id} className="bg-white p-6 hover:bg-slate-50 transition-all group flex flex-col justify-between">
+                  <div>
+                    <h4 className="font-black text-primary leading-tight mb-2 group-hover:text-accent transition-colors">{exam.title}</h4>
+                    <div className="flex gap-4 mb-4">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <Clock size={12} /> {exam.duration_minutes} мин
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <Target size={12} /> {exam.questions_count} вопр.
+                      </div>
+                    </div>
+                  </div>
+                  <Link 
+                    to={`/exam/${exam.id}`} 
+                    className="w-full py-3 bg-accent/10 hover:bg-accent text-primary font-black uppercase tracking-widest text-[10px] rounded-xl flex items-center justify-center gap-2 transition-all"
+                  >
+                    Начать экзамен
+                    <ChevronRight size={14} />
+                  </Link>
+                </div>
+              )) : (
+                <div className="bg-white p-12 text-center text-slate-300 col-span-2">
+                   <p className="text-[10px] font-bold uppercase tracking-widest">Экзамены пока недоступны</p>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Main Course Listing */}
           <div className="bg-white border shadow-sm">
             <div className="p-4 border-b flex justify-between items-center bg-slate-50">

@@ -11,6 +11,7 @@ import Profile from './pages/Profile';
 import Dashboard from './pages/Dashboard';
 import CourseView from './pages/CourseView';
 import TestView from './pages/TestView';
+import ExamView from './pages/ExamView';
 import AdminDashboard from './pages/AdminDashboard';
 import AppLayout from './layouts/AppLayout';
 import Logo from './components/Logo';
@@ -55,6 +56,7 @@ function MainRoutes() {
           <Route path="/subscriptions" element={<PrivateRoute title="Тарифные планы"><Subscriptions /></PrivateRoute>} />
           <Route path="/courses/:id" element={<PrivateRoute title="Просмотр курса"><CourseView /></PrivateRoute>} />
           <Route path="/lessons/:lessonId/test" element={<PrivateRoute title="Студенческий портал"><TestView /></PrivateRoute>} />
+          <Route path="/exam/:examId" element={<ExamView />} />
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         </Routes>
       </main>
