@@ -374,41 +374,52 @@ export default function TeacherDashboard() {
     
     try {
       const questionsData: any[] = [];
+      const content = rawExamText.trim();
       
-      // Ищем блоки: (Вопрос) (Варианты A-D) (Ответ)
-      // Regex: заголовок, затем список вариантов, затем ключевое слово "Ответ"
-      const questionRegex = /([\s\S]+?)(?=[A-D][\)\.\-\s]+(?:[\s\S]+?)[A-D][\)\.\-\s]+)([\s\S]+?)(?:Ответ|Answer|Correct)[:\s]*([A-D])/gi;
-      
+      // Ищем все вхождения "Ответ: [A-D]" как границы блоков
+      const answerRegex = /(?:Ответ|Answer|Correct)[:\s]*([A-D])/gi;
+      let lastIndex = 0;
       let match;
-      while ((match = questionRegex.exec(rawExamText)) !== null) {
-        let questionPart = match[1].trim();
-        const optionsPart = match[2].trim();
-        const correctAnswer = match[3].toUpperCase();
-
-        // Очистка текста вопроса от старой нумерации (например, "1. ", "2) ")
-        questionPart = questionPart.replace(/^\s*\d+[\.\)]\s*/, '').replace(/\n+/g, ' ').trim();
-
-        // Парсинг вариантов из optionsPart
-        const options: Record<string, string> = { A: '', B: '', C: '', D: '' };
-        const optMatches = [...optionsPart.matchAll(/([A-D])[\)\.\-\s]+([^\n]+?)(?=\s+[A-D][\)\.\-\s]|$)/gi)];
+      
+      while ((match = answerRegex.exec(content)) !== null) {
+        const answer = match[1].toUpperCase();
+        const blockEnd = match.index; // Позиция перед словом "Ответ"
+        const blockText = content.substring(lastIndex, blockEnd).trim();
         
-        optMatches.forEach(m => {
-          const letter = m[1].toUpperCase();
-          options[letter] = m[2].trim();
-        });
-
-        if (questionPart && options.A) {
-          questionsData.push({
-            question: questionPart,
-            option_a: options.A,
-            option_b: options.B,
-            option_c: options.C,
-            option_d: options.D,
-            correct_answer: correctAnswer,
-            explanation: '',
-            type: 'choice'
+        // Внутри блока ищем начало вариантов (обычно "A)")
+        // Используем более гибкий поиск для начала вариантов
+        const optARegex = /(?:\s|^)A[\)\.\-\s]+/;
+        const optIndex = blockText.search(optARegex);
+        
+        if (optIndex !== -1) {
+          let questionText = blockText.substring(0, optIndex).trim();
+          // Очистка от нумерации в начале вопроса (напр. "1. ", "14) ")
+          questionText = questionText.replace(/^\s*\d+[\.\)]\s*/, '').replace(/\n+/g, ' ').trim();
+          
+          const optionsPart = blockText.substring(optIndex);
+          const options: Record<string, string> = { A: '', B: '', C: '', D: '' };
+          
+          // Извлекаем варианты A, B, C, D
+          const optMatches = [...optionsPart.matchAll(/([A-D])[\)\.\-\s]+([^\n]+?)(?=\s+[A-D][\)\.\-\s]|$)/gi)];
+          optMatches.forEach(m => {
+            options[m[1].toUpperCase()] = m[2].trim();
           });
+
+          if (questionText && options.A) {
+            questionsData.push({
+              question: questionText,
+              option_a: options.A,
+              option_b: options.B,
+              option_c: options.C,
+              option_d: options.D,
+              correct_answer: answer,
+              explanation: '',
+              type: 'choice'
+            });
+          }
         }
+        
+        lastIndex = answerRegex.lastIndex;
       }
 
       if (questionsData.length > 0) {
