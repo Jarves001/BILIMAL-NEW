@@ -147,6 +147,7 @@ export default function TestView() {
         course_id: courseId,
         score: finalScore,
         total_questions: tasks.length,
+        answers: answers, // Save all answers for teacher review
         completed_at: serverTimestamp()
       });
     } catch (err) {

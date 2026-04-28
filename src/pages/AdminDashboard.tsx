@@ -87,7 +87,7 @@ export default function AdminDashboard() {
       const userRef = doc(db, 'users', app.user_id);
       await updateDoc(userRef, { 
         role: 'teacher',
-        subject: app.subject || 'general',
+        subject: (app.subject || 'general').toLowerCase(),
         teacherStatus: 'active'
       });
       

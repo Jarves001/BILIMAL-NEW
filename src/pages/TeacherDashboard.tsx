@@ -91,6 +91,7 @@ export default function TeacherDashboard() {
     testSuccess: 0,
     courseStats: [] as { name: string, students: number, success: number }[]
   });
+  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch Statistics
@@ -205,53 +206,57 @@ export default function TeacherDashboard() {
     }
   };
 
-  useEffect(() => {
-    async function fetchData() {
-      if (!user) return;
-      try {
-        const teacherSubject = user.subject || 'general';
-        const q = user.role === 'admin' 
-          ? collection(db, 'courses')
-          : query(
-              collection(db, 'courses'), 
-              where('teacher_id', '==', user.id),
-              where('subject', '==', teacherSubject)
-            );
-        
-        const coursesSnap = await getDocs(q);
-        const coursesList = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setCourses(coursesList);
+    useEffect(() => {
+      async function fetchData() {
+        if (!user || (user.role !== 'teacher' && user.role !== 'admin')) return;
+        try {
+          const teacherSubject = (user.subject || 'general').toLowerCase();
+          const q = user.role === 'admin' 
+            ? collection(db, 'courses')
+            : query(collection(db, 'courses'), where('subject', '==', teacherSubject));
+          
+          const coursesSnap = await getDocs(q);
+          const coursesList = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+          setCourses(coursesList);
+          const teacherCourseIds = coursesList.map(d => d.id);
 
-        const resultsSnap = await getDocs(collection(db, 'results'));
-        const teacherCourseIds = coursesList.map(d => d.id);
-        const relevantResults = resultsSnap.docs
-          .map(d => d.data() as any)
-          .filter(r => teacherCourseIds.includes(r.course_id));
+          // Real-time listener for results
+          const unsubscribeResults = onSnapshot(collection(db, 'results'), async (snap) => {
+            const relevantResults = snap.docs
+              .map(d => ({ id: d.id, ...d.data() } as any))
+              .filter(r => teacherCourseIds.includes(r.course_id));
 
-        const uniqueStudentIds = [...new Set(relevantResults.map(r => r.user_id))];
-        const studentProfiles = [];
-        for (const sId of uniqueStudentIds) {
-          const sDoc = await getDoc(doc(db, 'users', sId));
-          if (sDoc.exists()) {
-            studentProfiles.push({ 
-              id: sId, 
-              ...sDoc.data(), 
-              results: relevantResults.filter(r => r.user_id === sId) 
-            });
-          }
+            const uniqueStudentIds = [...new Set(relevantResults.map(r => r.user_id))].filter(Boolean);
+            const studentProfiles = [];
+            
+            for (const sId of uniqueStudentIds) {
+              const sDoc = await getDoc(doc(db, 'users', sId));
+              if (sDoc.exists()) {
+                const sResults = relevantResults.filter(r => r.user_id === sId);
+                // Pre-fetch lesson titles (could be optimized with a cache)
+                const resultsWithLessons = [];
+                for (const res of sResults) {
+                  const lessonDoc = await getDoc(doc(db, `courses/${res.course_id}/lessons`, res.lesson_id));
+                  resultsWithLessons.push({
+                    ...res,
+                    lessonTitle: lessonDoc.exists() ? lessonDoc.data().title : 'Урок не найден'
+                  });
+                }
+                studentProfiles.push({ id: sId, ...sDoc.data(), results: resultsWithLessons });
+              }
+            }
+            setStudents(studentProfiles);
+          });
+
+          return () => unsubscribeResults();
+        } catch (err) {
+          console.error('Error in teacher fetchData:', err);
+        } finally {
+          setLoading(false);
         }
-        setStudents(studentProfiles);
-      } catch (err) {
-        console.error('Error fetching teacher data:', err);
-      } finally {
-        setLoading(false);
       }
-    }
-
-    if (user?.role === 'teacher' || user?.role === 'admin') {
       fetchData();
-    }
-  }, [user]);
+    }, [user]);
 
   useEffect(() => {
     async function fetchLessons() {
@@ -274,7 +279,7 @@ export default function TeacherDashboard() {
       const docRef = await addDoc(collection(db, 'courses'), {
         title: newCourse.title,
         description: newCourse.description,
-        subject: user.subject || 'general',
+        subject: (user.subject || 'general').toLowerCase(),
         teacher_id: user.id,
         created_at: new Date().toISOString()
       });
@@ -768,7 +773,10 @@ export default function TeacherDashboard() {
                         </span>
                       </td>
                       <td className="px-6 py-5">
-                         <button className="text-[10px] bg-slate-100 px-3 py-1.5 rounded-lg font-bold uppercase tracking-widest text-slate-500 hover:bg-primary hover:text-white transition-all">
+                         <button 
+                           onClick={() => setSelectedStudent(s)}
+                           className="text-[10px] bg-slate-100 px-3 py-1.5 rounded-lg font-bold uppercase tracking-widest text-slate-500 hover:bg-primary hover:text-white transition-all"
+                         >
                            Детали
                          </button>
                       </td>
@@ -1064,6 +1072,69 @@ export default function TeacherDashboard() {
                 </button>
               </div>
             </form>
+          </motion.div>
+        </div>
+      )}
+      {selectedStudent && (
+        <div className="fixed inset-0 bg-primary/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-2xl rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-hidden flex flex-col">
+            <button onClick={() => setSelectedStudent(null)} className="absolute top-6 right-6 text-slate-300 hover:text-primary"><X size={24} /></button>
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center font-bold text-2xl text-primary italic">
+                {selectedStudent.name?.charAt(0)}
+              </div>
+              <div>
+                <h2 className="text-2xl font-black text-primary uppercase tracking-tighter">{selectedStudent.name}</h2>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{selectedStudent.email}</p>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+              <h3 className="text-xs font-black text-primary uppercase tracking-widest mb-2">История прохождения тестов</h3>
+              {selectedStudent.results && selectedStudent.results.length > 0 ? (
+                selectedStudent.results.sort((a: any, b: any) => (b.completed_at?.seconds || 0) - (a.completed_at?.seconds || 0)).map((res: any, idx: number) => (
+                  <div key={res.id || idx} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-accent/30 transition-all">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <p className="text-[10px] text-accent font-black uppercase tracking-widest mb-1">Урок</p>
+                        <h4 className="font-bold text-primary group-hover:text-accent transition-colors">{res.lessonTitle}</h4>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Оценка</p>
+                        <span className={`px-2 py-1 rounded text-[10px] font-black tracking-widest ${
+                          (res.score / (res.total_questions || 1)) > 0.8 ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                        }`}>
+                          {res.score} / {res.total_questions}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-4">
+                      <p className="text-[9px] text-slate-400 font-medium">
+                        {res.completed_at?.toDate ? res.completed_at.toDate().toLocaleString() : 'Дата неизвестна'}
+                      </p>
+                      <div className="w-24 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-500 ${(res.score / (res.total_questions || 1)) > 0.8 ? 'bg-green-500' : 'bg-accent'}`} 
+                          style={{ width: `${(res.score / (res.total_questions || 1)) * 100}%` }} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="py-20 text-center opacity-30">
+                  <Clipboard size={48} className="mx-auto mb-4" />
+                  <p className="text-xs font-bold uppercase tracking-widest">Нет результатов тестов</p>
+                </div>
+              )}
+            </div>
+
+            <button 
+              onClick={() => setSelectedStudent(null)}
+              className="mt-8 w-full py-4 bg-primary text-white rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-primary/90 transition-all"
+            >
+              Закрыть
+            </button>
           </motion.div>
         </div>
       )}
