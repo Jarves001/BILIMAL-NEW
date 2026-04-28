@@ -17,7 +17,9 @@ export default function Header({ title }: { title: string }) {
         <div className="flex items-center gap-3">
           <div className="text-right">
             <p className="text-xs font-bold leading-none">{user?.name}</p>
-            <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-tighter">Студент НИШ/БИЛ</p>
+            <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-tighter">
+              {user?.role === 'admin' ? 'Администратор' : user?.role === 'teacher' ? 'Преподаватель' : 'Студент НИШ/БИЛ'}
+            </p>
           </div>
         </div>
       </div>
