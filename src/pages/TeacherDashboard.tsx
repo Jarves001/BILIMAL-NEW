@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent, useRef, MouseEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { db } from '../lib/firebase';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, query, getDocs, where, addDoc, doc, getDoc, deleteDoc, updateDoc, onSnapshot, orderBy, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { 
@@ -279,6 +279,7 @@ export default function TeacherDashboard() {
 
         // Fetch basic profiles for the list (WITHOUT nested lesson lookups)
         const profilePromises = uniqueStudentIds.map(async (sId) => {
+          const path = `users/${sId}`;
           try {
             const sDoc = await getDoc(doc(db, 'users', sId));
             if (sDoc.exists()) {
@@ -288,9 +289,15 @@ export default function TeacherDashboard() {
                 ...sDoc.data(),
                 results: sResults // Keep raw results for average calculation
               };
+            } else {
+              console.warn(`TeacherDashboard: Student profile ${sId} not found in database.`);
             }
           } catch (err) {
             console.error(`Error fetching student ${sId} profile:`, err);
+            // If it's a permission error, we use our helper to throw specific error
+            if (err instanceof Error && (err.message.includes('permission') || err.message.includes('insufficient'))) {
+               handleFirestoreError(err, OperationType.GET, path);
+            }
           }
           return null;
         });

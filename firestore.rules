@@ -112,7 +112,7 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin() || isTeacher());
       allow list: if isAdmin();
       allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
       allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin()) && (
@@ -153,8 +153,8 @@ service cloud.firestore {
     }
 
     match /results/{resultId} {
-      allow get: if isSignedIn() && (existing().user_id == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin() || isTeacher());
+      allow list: if isSignedIn() && (isAdmin() || isTeacher());
+      allow get: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin() || isTeacher());
       allow create: if isSignedIn() && isValidResult(incoming());
       allow update, delete: if isAdmin();
     }
