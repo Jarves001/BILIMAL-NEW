@@ -98,7 +98,7 @@ export default function TeacherDashboard() {
     if (activeTab === 'stats' && user) {
       const fetchStats = async () => {
         try {
-          const teacherSubject = (user as any).subject || 'unassigned';
+          const teacherSubject = user.subject || 'general';
           const studentsSnap = await getDocs(query(collection(db, 'users'), where('role', '==', 'student')));
           const coursesSnap = await getDocs(query(
             collection(db, 'courses'), 
@@ -142,7 +142,7 @@ export default function TeacherDashboard() {
   useEffect(() => {
     if (activeTab === 'chat' && user) {
       const fetchStudents = async () => {
-        const teacherSubject = (user as any).subject || 'unassigned';
+        const teacherSubject = user.subject || 'general';
         const q = query(
           collection(db, 'messages'),
           where('subject', '==', teacherSubject),
@@ -167,7 +167,7 @@ export default function TeacherDashboard() {
   // Chat logic - real-time messages for subject
   useEffect(() => {
     if (selectedChatUser && user && activeTab === 'chat') {
-      const teacherSubject = (user as any).subject || 'unassigned';
+      const teacherSubject = user.subject || 'general';
       const q = query(
         collection(db, 'messages'),
         where('participants', 'array-contains', user.id),
@@ -195,7 +195,7 @@ export default function TeacherDashboard() {
         text: newChatMessage,
         senderId: user.id,
         receiverId: selectedChatUser.id,
-        subject: (user as any).subject || 'unassigned',
+        subject: user.subject || 'general',
         participants: [user.id, selectedChatUser.id],
         createdAt: serverTimestamp()
       });
@@ -209,7 +209,7 @@ export default function TeacherDashboard() {
     async function fetchData() {
       if (!user) return;
       try {
-        const teacherSubject = (user as any).subject || 'unassigned';
+        const teacherSubject = user.subject || 'general';
         const q = user.role === 'admin' 
           ? collection(db, 'courses')
           : query(
@@ -274,11 +274,11 @@ export default function TeacherDashboard() {
       const docRef = await addDoc(collection(db, 'courses'), {
         title: newCourse.title,
         description: newCourse.description,
-        subject: (user as any).subject || 'unassigned',
+        subject: user.subject || 'general',
         teacher_id: user.id,
         created_at: new Date().toISOString()
       });
-      setCourses([{ id: docRef.id, title: newCourse.title, description: newCourse.description, teacher_id: user.id, subject: (user as any).subject || 'unassigned' }, ...courses]);
+      setCourses([{ id: docRef.id, title: newCourse.title, description: newCourse.description, teacher_id: user.id, subject: user.subject || 'general' }, ...courses]);
       setIsAddingCourse(false);
       setNewCourse({ title: '', description: '' });
     } catch (err) {
@@ -396,7 +396,7 @@ export default function TeacherDashboard() {
         <div>
           <h1 className="text-3xl font-black text-primary uppercase tracking-tighter">Панель преподавателя</h1>
           <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">
-            Предмет: {((user as any).subject ? getSubjectLabel((user as any).subject) : 'Не назначен').toUpperCase()}
+            Предмет: {(user.subject ? getSubjectLabel(user.subject) : 'Не назначен').toUpperCase()}
           </p>
         </div>
         <button 
@@ -787,7 +787,7 @@ export default function TeacherDashboard() {
             <button onClick={() => setIsAddingCourse(false)} className="absolute top-6 right-6 text-slate-300 hover:text-primary"><X size={24} /></button>
             <h2 className="text-2xl font-black text-primary mb-2 uppercase tracking-tighter">Новый курс</h2>
             <p className="text-[10px] text-accent font-black uppercase tracking-[0.2em] mb-6">
-              Предмет: {(user as any).subject ? getSubjectLabel((user as any).subject) : 'Не назначен'}
+              Предмет: {user.subject ? getSubjectLabel(user.subject) : 'Не назначен'}
             </p>
             <form onSubmit={handleCreateCourse} className="space-y-6">
               <div>

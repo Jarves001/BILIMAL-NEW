@@ -135,37 +135,38 @@ async function startServer() {
 
       const isExpired = sub.end_date && new Date(sub.end_date) < new Date();
       if (isExpired) {
-        await subSnap.ref.delete();
+        try {
+          await subSnap.ref.delete();
+        } catch (e) {
+          console.warn('Could not delete expired subscription:', e);
+        }
         return null;
       }
       return sub;
     } catch (err: any) {
-      console.warn('getSubscription failed (likely permissions):', err.message);
+      if (err.code === 7 || err.message.includes('PERMISSION_DENIED')) {
+        // Re-throw so checkSubscription can handle the bypass
+        throw err;
+      }
+      console.warn('getSubscription failed:', err.message);
       return null;
     }
   };
 
   const checkSubscription = async (req: any, res: any, next: any) => {
+    // 1. Immediate bypass for admin email
+    if (req.user.email === 'jarves276@gmail.com') return next();
+
     try {
+      // 2. Check user role
       const userDoc = await db.collection('users').doc(req.user.uid).get();
       const userData = userDoc.data();
-      
       if (userData?.role === 'admin' || userData?.role === 'teacher') return next();
       
-      // If we are in a permission-denied environment for Admin SDK, 
-      // we'll try to be more lenient if we can't fetch the subscription,
-      // but only if the fetching actually fails.
-      let sub = null;
-      try {
-        sub = await getSubscription(req.user.uid);
-      } catch (subErr) {
-        console.warn('Silent failure in checkSubscription (sub fetch):', subErr);
-      }
+      // 3. Fetch subscription
+      const sub = await getSubscription(req.user.uid);
 
       if (!sub) {
-        // Double check if user has a bypass email
-        if (req.user.email === 'jarves276@gmail.com') return next();
-
         return res.status(403).json({ 
           error: 'Subscription required', 
           message: 'Купите подписку для доступа к этому разделу' 
@@ -174,7 +175,7 @@ async function startServer() {
       req.subscription = sub;
       next();
     } catch (err: any) {
-      console.warn('checkSubscription overall failure:', err.message);
+      console.warn('checkSubscription failure:', err.message);
       // In development/test mode, we allow access if Admin SDK is completely blocked
       if (err.code === 7 || err.message.includes('PERMISSION_DENIED')) {
         console.warn('Bypassing checkSubscription due to Admin SDK permissions.');
@@ -186,8 +187,13 @@ async function startServer() {
 
   // --- SUBSCRIPTION ROUTES ---
   app.get('/api/my-subscription', authenticate, async (req: any, res) => {
-    const sub = await getSubscription(req.user.uid);
-    res.json(sub);
+    try {
+      const sub = await getSubscription(req.user.uid);
+      res.json(sub);
+    } catch (err: any) {
+      console.warn('api/my-subscription error:', err.message);
+      res.json(null);
+    }
   });
 
   app.post('/api/subscribe', authenticate, async (req: any, res) => {

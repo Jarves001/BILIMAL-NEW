@@ -17,6 +17,7 @@ interface User {
   name: string;
   email: string;
   role: 'admin' | 'teacher' | 'student';
+  subject?: string;
   subscription: 'active' | 'inactive';
   subInfo?: {
     plan: 'basic' | 'test' | 'premium';
@@ -107,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 name: data.name || firebaseUser.displayName || 'Пользователь',
                 email: userEmail,
                 role: isAdminUser ? 'admin' : (data.role || 'student'),
+                subject: data.subject,
                 subscription: subInfo ? 'active' : 'inactive',
                 subInfo: subInfo
               });
