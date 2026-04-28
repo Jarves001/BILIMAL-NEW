@@ -21,7 +21,7 @@ import {
   Clipboard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { getSubjectLabel } from '../constants';
+import { getSubjectLabel, SUBJECTS } from '../constants';
 
 const compressImage = (file: File | Blob): Promise<string> => {
   return new Promise((resolve) => {
@@ -218,18 +218,33 @@ export default function TeacherDashboard() {
     setLoading(true);
     // Fetch all courses and filter in memory to handle legacy case-sensitive data
     const unsubscribe = onSnapshot(collection(db, 'courses'), (snap) => {
-      const allCourses = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
-      const filtered = user.role === 'admin' 
-        ? allCourses 
-        : allCourses.filter(c => {
-            const courseSub = (c.subject || '').toLowerCase();
-            const courseSubObj = SUBJECTS.find(s => s.id === courseSub || s.name.toLowerCase() === courseSub);
-            const normalizedCourseSub = courseSubObj ? courseSubObj.id : courseSub;
-            return normalizedCourseSub === normalizedSubject;
-          });
-      
-      setCourses(filtered);
-      setLoading(false);
+      try {
+        const allCourses = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+        console.log('TeacherDashboard: Fetched', allCourses.length, 'total courses');
+
+        const filtered = user.role === 'admin' 
+          ? allCourses 
+          : allCourses.filter(c => {
+              // 1. Always show if they are the teacher_id
+              if (c.teacher_id === user.id) return true;
+
+              // 2. Otherwise match by normalized subject
+              const courseSub = (c.subject || '').toLowerCase();
+              const courseSubObj = SUBJECTS.find(s => s.id === courseSub || s.name.toLowerCase() === courseSub);
+              const normalizedCourseSub = courseSubObj ? courseSubObj.id : courseSub;
+              
+              const isMatch = normalizedCourseSub === normalizedSubject;
+              if (isMatch) console.log(`TeacherDashboard: Match found for course "${c.title}" via subject "${normalizedSubject}"`);
+              return isMatch;
+            });
+        
+        console.log('TeacherDashboard: Filtered to', filtered.length, 'courses for subject:', normalizedSubject);
+        setCourses(filtered);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error processing courses snapshot:', err);
+        setLoading(false);
+      }
     }, (err) => {
       console.error('Error fetching courses:', err);
       setLoading(false);
@@ -246,66 +261,76 @@ export default function TeacherDashboard() {
     }
 
     const courseIds = courses.map(c => c.id);
+    console.log('TeacherDashboard: Monitoring courses', courseIds);
     
     // Listen to results collection
     const unsubscribe = onSnapshot(collection(db, 'results'), async (snap) => {
-      const allResults = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
-      
-      // Filter results that belong to the teacher's courses
-      // Or (Defensive) results where the subject matches, even if course_id is orphans
-      const relevantResults = allResults.filter(r => {
-        const isFromCourse = courseIds.includes(r.course_id);
-        return isFromCourse;
-      });
+      try {
+        const allResults = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+        const relevantResults = allResults.filter(r => courseIds.includes(r.course_id));
+        const uniqueStudentIds = [...new Set(relevantResults.map(r => r.user_id))].filter(Boolean);
+        
+        console.log(`TeacherDashboard: Found ${relevantResults.length} relevant results for ${uniqueStudentIds.length} students`);
 
-      const uniqueStudentIds = [...new Set(relevantResults.map(r => r.user_id))].filter(Boolean);
-      
-      if (uniqueStudentIds.length === 0) {
-        setStudents([]);
-        return;
-      }
-
-      // We can fetch profiles in parallel for better performance
-      const profilePromises = uniqueStudentIds.map(async (sId) => {
-        try {
-          const sDoc = await getDoc(doc(db, 'users', sId));
-          if (sDoc.exists()) {
-            const sResults = relevantResults.filter(r => r.user_id === sId);
-            
-            // Fetch lesson titles for these results
-            const resultsWithDetails = [];
-            for (const res of sResults) {
-              try {
-                const lessonDoc = await getDoc(doc(db, `courses/${res.course_id}/lessons`, res.lesson_id));
-                resultsWithDetails.push({
-                  ...res,
-                  lessonTitle: lessonDoc.exists() ? lessonDoc.data().title : 'Урок не найден'
-                });
-              } catch (lessonErr) {
-                resultsWithDetails.push({ ...res, lessonTitle: 'Ошибка загрузки урока' });
-              }
-            }
-
-            return {
-              id: sId,
-              ...sDoc.data(),
-              results: resultsWithDetails
-            };
-          }
-        } catch (err) {
-          console.error(`Error fetching student ${sId} profile:`, err);
+        if (uniqueStudentIds.length === 0) {
+          setStudents([]);
+          return;
         }
-        return null;
-      });
 
-      const profiles = await Promise.all(profilePromises);
-      setStudents(profiles.filter((p): p is any => p !== null));
+        // Fetch basic profiles for the list (WITHOUT nested lesson lookups)
+        const profilePromises = uniqueStudentIds.map(async (sId) => {
+          try {
+            const sDoc = await getDoc(doc(db, 'users', sId));
+            if (sDoc.exists()) {
+              const sResults = relevantResults.filter(r => r.user_id === sId);
+              return {
+                id: sId,
+                ...sDoc.data(),
+                results: sResults // Keep raw results for average calculation
+              };
+            }
+          } catch (err) {
+            console.error(`Error fetching student ${sId} profile:`, err);
+          }
+          return null;
+        });
+
+        const profiles = await Promise.all(profilePromises);
+        setStudents(profiles.filter((p): p is any => p !== null));
+      } catch (err) {
+        console.error('Error processing results snapshot:', err);
+      }
     }, (err) => {
       console.error('Results listener error:', err);
     });
 
     return () => unsubscribe();
   }, [courses, loading]);
+
+  // Helper to fetch details for a selected student results
+  const fetchResultDetails = async (studentResults: any[]) => {
+    const enriched = [];
+    for (const res of studentResults) {
+      try {
+        const lessonDoc = await getDoc(doc(db, `courses/${res.course_id}/lessons`, res.lesson_id));
+        enriched.push({
+          ...res,
+          lessonTitle: lessonDoc.exists() ? lessonDoc.data().title : 'Урок не найден'
+        });
+      } catch (err) {
+        enriched.push({ ...res, lessonTitle: 'Ошибка загрузки данных' });
+      }
+    }
+    return enriched;
+  };
+
+  useEffect(() => {
+    if (selectedStudent && (!selectedStudent.results || selectedStudent.results.length > 0 && !selectedStudent.results[0].lessonTitle)) {
+      fetchResultDetails(selectedStudent.results).then(enriched => {
+        setSelectedStudent((prev: any) => ({ ...prev, results: enriched }));
+      });
+    }
+  }, [selectedStudent?.id]);
 
   useEffect(() => {
     async function fetchLessons() {
