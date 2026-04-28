@@ -206,57 +206,88 @@ export default function TeacherDashboard() {
     }
   };
 
-    useEffect(() => {
-      async function fetchData() {
-        if (!user || (user.role !== 'teacher' && user.role !== 'admin')) return;
+  // 1. Fetch Courses (Real-time) - Case-insensitive subject filtering
+  useEffect(() => {
+    if (!user || (user.role !== 'teacher' && user.role !== 'admin')) return;
+
+    const teacherSubject = (user.subject || 'general').toLowerCase();
+
+    setLoading(true);
+    // Fetch all courses and filter in memory to handle legacy case-sensitive data
+    const unsubscribe = onSnapshot(collection(db, 'courses'), (snap) => {
+      const allCourses = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+      const filtered = user.role === 'admin' 
+        ? allCourses 
+        : allCourses.filter(c => (c.subject || '').toLowerCase() === teacherSubject);
+      
+      setCourses(filtered);
+      setLoading(false);
+    }, (err) => {
+      console.error('Error fetching courses:', err);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // 2. Fetch Students and their Results based on current courses
+  useEffect(() => {
+    if (courses.length === 0) {
+      if (!loading) setStudents([]);
+      return;
+    }
+
+    const courseIds = courses.map(c => c.id);
+    
+    // Listen to results collection
+    const unsubscribe = onSnapshot(collection(db, 'results'), async (snap) => {
+      const allResults = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+      const relevantResults = allResults.filter(r => courseIds.includes(r.course_id));
+
+      const uniqueStudentIds = [...new Set(relevantResults.map(r => r.user_id))].filter(Boolean);
+      
+      const studentProfiles = [];
+      // We can fetch profiles in parallel for better performance
+      const profilePromises = uniqueStudentIds.map(async (sId) => {
         try {
-          const teacherSubject = (user.subject || 'general').toLowerCase();
-          const q = user.role === 'admin' 
-            ? collection(db, 'courses')
-            : query(collection(db, 'courses'), where('subject', '==', teacherSubject));
-          
-          const coursesSnap = await getDocs(q);
-          const coursesList = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-          setCourses(coursesList);
-          const teacherCourseIds = coursesList.map(d => d.id);
-
-          // Real-time listener for results
-          const unsubscribeResults = onSnapshot(collection(db, 'results'), async (snap) => {
-            const relevantResults = snap.docs
-              .map(d => ({ id: d.id, ...d.data() } as any))
-              .filter(r => teacherCourseIds.includes(r.course_id));
-
-            const uniqueStudentIds = [...new Set(relevantResults.map(r => r.user_id))].filter(Boolean);
-            const studentProfiles = [];
+          const sDoc = await getDoc(doc(db, 'users', sId));
+          if (sDoc.exists()) {
+            const sResults = relevantResults.filter(r => r.user_id === sId);
             
-            for (const sId of uniqueStudentIds) {
-              const sDoc = await getDoc(doc(db, 'users', sId));
-              if (sDoc.exists()) {
-                const sResults = relevantResults.filter(r => r.user_id === sId);
-                // Pre-fetch lesson titles (could be optimized with a cache)
-                const resultsWithLessons = [];
-                for (const res of sResults) {
-                  const lessonDoc = await getDoc(doc(db, `courses/${res.course_id}/lessons`, res.lesson_id));
-                  resultsWithLessons.push({
-                    ...res,
-                    lessonTitle: lessonDoc.exists() ? lessonDoc.data().title : 'Урок не найден'
-                  });
-                }
-                studentProfiles.push({ id: sId, ...sDoc.data(), results: resultsWithLessons });
+            // Fetch lesson titles for these results
+            const resultsWithDetails = [];
+            for (const res of sResults) {
+              try {
+                const lessonDoc = await getDoc(doc(db, `courses/${res.course_id}/lessons`, res.lesson_id));
+                resultsWithDetails.push({
+                  ...res,
+                  lessonTitle: lessonDoc.exists() ? lessonDoc.data().title : 'Урок не найден'
+                });
+              } catch (lessonErr) {
+                resultsWithDetails.push({ ...res, lessonTitle: 'Ошибка загрузки урока' });
               }
             }
-            setStudents(studentProfiles);
-          });
 
-          return () => unsubscribeResults();
+            return {
+              id: sId,
+              ...sDoc.data(),
+              results: resultsWithDetails
+            };
+          }
         } catch (err) {
-          console.error('Error in teacher fetchData:', err);
-        } finally {
-          setLoading(false);
+          console.error(`Error fetching student ${sId} profile:`, err);
         }
-      }
-      fetchData();
-    }, [user]);
+        return null;
+      });
+
+      const profiles = await Promise.all(profilePromises);
+      setStudents(profiles.filter((p): p is any => p !== null));
+    }, (err) => {
+      console.error('Results listener error:', err);
+    });
+
+    return () => unsubscribe();
+  }, [courses, loading]);
 
   useEffect(() => {
     async function fetchLessons() {
