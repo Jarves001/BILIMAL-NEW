@@ -373,42 +373,38 @@ export default function TeacherDashboard() {
     setIsParsingText(true);
     
     try {
-      // Manual parsing logic
-      // Split by numbers like "1.", "2.", etc. at the start of lines
       const questionsData: any[] = [];
-      const blocks = rawExamText.split(/\n\s*\d+[\.\)]\s*/);
       
-      for (const block of blocks) {
-        if (!block.trim()) continue;
+      // Ищем блоки: (Вопрос) (Варианты A-D) (Ответ)
+      // Regex: заголовок, затем список вариантов, затем ключевое слово "Ответ"
+      const questionRegex = /([\s\S]+?)(?=[A-D][\)\.\-\s]+(?:[\s\S]+?)[A-D][\)\.\-\s]+)([\s\S]+?)(?:Ответ|Answer|Correct)[:\s]*([A-D])/gi;
+      
+      let match;
+      while ((match = questionRegex.exec(rawExamText)) !== null) {
+        let questionPart = match[1].trim();
+        const optionsPart = match[2].trim();
+        const correctAnswer = match[3].toUpperCase();
+
+        // Очистка текста вопроса от старой нумерации (например, "1. ", "2) ")
+        questionPart = questionPart.replace(/^\s*\d+[\.\)]\s*/, '').replace(/\n+/g, ' ').trim();
+
+        // Парсинг вариантов из optionsPart
+        const options: Record<string, string> = { A: '', B: '', C: '', D: '' };
+        const optMatches = [...optionsPart.matchAll(/([A-D])[\)\.\-\s]+([^\n]+?)(?=\s+[A-D][\)\.\-\s]|$)/gi)];
         
-        // Find question text (everything before the first option)
-        const qMatch = block.match(/^([^\n]+)/);
-        let question = qMatch ? qMatch[1].trim() : '';
-
-        let options: Record<string, string> = { A: '', B: '', C: '', D: '' };
-        let correctAnswer = '';
-
-        // Find all options A), B), ... even if they are on the same line
-        const optMatches = [...block.matchAll(/([A-D])[\)\.\-\s]+([^\n]+?)(?=\s+[A-D][\)\.\-\s]|$|Ответ:|Answer:)/gi)];
         optMatches.forEach(m => {
           const letter = m[1].toUpperCase();
           options[letter] = m[2].trim();
         });
 
-        // Find answer
-        const ansMatch = block.match(/(?:Ответ|Answer|Correct)[:\s]*([A-D])/i);
-        if (ansMatch) {
-          correctAnswer = ansMatch[1].toUpperCase();
-        }
-
-        if (question && options.A) {
+        if (questionPart && options.A) {
           questionsData.push({
-            question,
+            question: questionPart,
             option_a: options.A,
             option_b: options.B,
             option_c: options.C,
             option_d: options.D,
-            correct_answer: correctAnswer || 'A',
+            correct_answer: correctAnswer,
             explanation: '',
             type: 'choice'
           });
@@ -422,7 +418,7 @@ export default function TeacherDashboard() {
         }));
         setRawExamText('');
       } else {
-        alert('Не удалось распознать вопросы. Убедитесь, что текст соответствует формату: \n1. Вопрос \nA) Вариант B) Вариант... \nОтвет: A');
+        alert('Не удалось распознать вопросы. Убедитесь, что текст соответствует формату:\n\nВопрос\nA) Вариант\nB) Вариант\nОтвет: A');
       }
     } catch (err) {
       console.error('Error parsing exam text:', err);
