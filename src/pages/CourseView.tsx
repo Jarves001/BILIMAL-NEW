@@ -25,6 +25,8 @@ export default function CourseView() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
+
   useEffect(() => {
     async function fetchCourseData() {
       if (!id) return;
@@ -45,7 +47,7 @@ export default function CourseView() {
         
         const lessonsData = lessonsSnap.docs.map(doc => {
           const data = doc.data();
-          const isLocked = !sub.has_video_access && data.video_url && data.order_index > 1; // Example: lock video if no subscription
+          const isLocked = !sub.has_video_access && data.video_url && data.order_index > 0; // Example lock
           return { id: doc.id, ...data } as Lesson;
         });
 
@@ -54,6 +56,10 @@ export default function CourseView() {
           ...courseDoc.data() as any,
           lessons: lessonsData
         });
+        
+        if (lessonsData.length > 0) {
+          setActiveLesson(lessonsData[0]);
+        }
       } catch (err) {
         console.error('Failed to fetch course details from Firestore:', err);
       }
@@ -62,50 +68,104 @@ export default function CourseView() {
     fetchCourseData();
   }, [id, user]);
 
+  const getYoutubeId = (url: string) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url?.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
   if (!course) return <div className="p-20 text-center uppercase tracking-widest text-xs font-bold text-slate-400">Синхронизация данных курса...</div>;
 
   return (
     <div className="space-y-6">
-      <div className="bg-white border shadow-sm p-8">
-        <div className="text-[10px] uppercase text-accent font-bold tracking-[0.3em] mb-2">Academic Course</div>
-        <h1 className="text-3xl font-bold text-primary mb-4 tracking-tight">{course.title}</h1>
-        <p className="text-slate-500 max-w-3xl text-sm leading-relaxed">{course.description}</p>
+      <div className="bg-white border shadow-sm p-8 rounded-3xl overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+        <div className="relative z-10">
+          <div className="text-[10px] uppercase text-accent font-black tracking-[0.3em] mb-2">Academic Course</div>
+          <h1 className="text-3xl font-black text-primary mb-4 tracking-tight uppercase">{course.title}</h1>
+          <p className="text-slate-500 max-w-3xl text-sm font-medium leading-relaxed">{course.description}</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          <div className="bg-white border shadow-sm overflow-hidden">
-            <div className="p-4 border-b bg-slate-50 flex justify-between items-center">
-              <h3 className="text-sm font-bold uppercase tracking-tight text-primary">Программа обучения</h3>
-              <span className="text-[10px] font-bold text-slate-400 capitalize">{course.lessons.length} Модулей</span>
+        <div className="lg:col-span-2 space-y-6">
+          {/* Video Player Section */}
+          {activeLesson && (
+            <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+              <div className="aspect-video bg-black relative flex items-center justify-center">
+                {activeLesson.video_url ? (
+                  getYoutubeId(activeLesson.video_url) ? (
+                    <iframe 
+                      className="w-full h-full"
+                      src={`https://www.youtube.com/embed/${getYoutubeId(activeLesson.video_url)}`}
+                      title={activeLesson.title}
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                  ) : (
+                    <video 
+                      src={activeLesson.video_url} 
+                      className="w-full h-full" 
+                      controls 
+                      poster="https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop"
+                    />
+                  )
+                ) : (
+                  <div className="text-center p-12">
+                    <Play size={48} className="text-slate-700 mx-auto mb-4 opacity-20" />
+                    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Видео к этому уроку отсутствует</p>
+                  </div>
+                )}
+              </div>
+              <div className="p-6 bg-white flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-black text-primary tracking-tight">{activeLesson.title}</h2>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Текущий модуль обучения</p>
+                </div>
+                <Link 
+                  to={`/lessons/${activeLesson.id}/test?courseId=${id}`}
+                  className="bg-primary text-white px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-primary/90 transition-all flex items-center gap-2"
+                >
+                  Пройти тест <ClipboardList size={14} />
+                </Link>
+              </div>
             </div>
-            <div className="p-0 divide-y">
+          )}
+
+          <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+            <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+              <h3 className="text-xs font-black uppercase tracking-widest text-primary">Программа обучения</h3>
+              <span className="text-[10px] font-bold text-slate-400">{course.lessons.length} Модулей</span>
+            </div>
+            <div className="divide-y divide-slate-50">
               {course.lessons.map((lesson, idx) => (
-                <div key={lesson.id} className="p-6 flex items-center gap-6 hover:bg-slate-50 transition-colors group">
-                  <div className="w-10 h-10 bg-slate-100 rounded flex items-center justify-center font-bold text-primary shrink-0 text-sm group-hover:bg-accent group-hover:text-primary transition-colors">
+                <div 
+                  key={lesson.id} 
+                  onClick={() => !lesson.video_locked && setActiveLesson(lesson)}
+                  className={`p-6 flex items-center gap-6 hover:bg-slate-50 transition-all cursor-pointer group ${activeLesson?.id === lesson.id ? 'bg-accent/5 border-l-4 border-l-accent' : ''}`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 transition-all ${
+                    activeLesson?.id === lesson.id ? 'bg-accent text-primary' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200 group-hover:text-primary'
+                  }`}>
                     {idx + 1}
                   </div>
                   <div className="flex-grow">
-                    <h4 className="font-bold text-primary mb-1 flex items-center gap-2">
+                    <h4 className={`font-bold transition-colors mb-1 flex items-center gap-2 ${activeLesson?.id === lesson.id ? 'text-primary' : 'text-slate-600 group-hover:text-primary'}`}>
                       {lesson.title}
-                      {lesson.video_locked && <Lock size={12} className="text-slate-400" />}
+                      {lesson.video_locked && <Lock size={12} className="text-slate-300" />}
                     </h4>
-                    <div className="flex items-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                    <div className="flex items-center gap-4 text-[9px] text-slate-400 font-bold uppercase tracking-widest">
                       <span className="flex items-center gap-1">
-                        <Play size={10}/> 
-                        {lesson.video_locked ? 'Видео заблокировано' : 'Видеолекция'}
+                        <Play size={10} className={activeLesson?.id === lesson.id ? 'text-accent' : ''}/> 
+                        {lesson.video_locked ? 'Заблокировано' : 'Видеолекция'}
                       </span>
-                      <span className="flex items-center gap-1"><ClipboardList size={10}/> Практический тест</span>
+                      <span className="flex items-center gap-1"><ClipboardList size={10}/> Тест</span>
                     </div>
                   </div>
-                  <div>
-                    <Link 
-                      to={`/lessons/${lesson.id}/test?courseId=${id}`}
-                      className="btn-outline !py-1.5 !px-3 !text-[10px] flex items-center gap-2 group-hover:bg-primary group-hover:text-white"
-                    >
-                      Решить тест <ChevronRight size={12} />
-                    </Link>
-                  </div>
+                  {activeLesson?.id === lesson.id && (
+                    <div className="bg-accent/20 text-primary px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">Смотришь сейчас</div>
+                  )}
                 </div>
               ))}
             </div>

@@ -4,7 +4,7 @@ import api from '../api/client';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, limit, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
-import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX, Trophy, Target, MessageSquare, AlertCircle, CheckCircle, X, Send } from 'lucide-react';
+import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX, Trophy, Target, MessageSquare, AlertCircle, CheckCircle, X, Send, Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSubjectLabel } from '../constants';
 
@@ -277,9 +277,12 @@ export default function Dashboard() {
                     <h4 className="font-bold text-lg text-primary leading-tight mb-2">{course.title}</h4>
                     <p className="text-sm text-slate-500 line-clamp-2 mb-4">{course.description}</p>
                     <div className="flex items-center gap-4">
-                      <Link to={`/courses/${course.id}`} className="btn-primary !py-2 !px-4">Продолжить</Link>
+                      <Link to={`/courses/${course.id}`} className="bg-primary text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/90 transition-all flex items-center gap-2 shadow-lg shadow-primary/10">
+                        <Play size={14} className="fill-current" />
+                        Смотреть уроки
+                      </Link>
                       <span className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
-                        <Clock size={12} /> Обновлено недавно
+                        <Clock size={12} /> Обновлено
                       </span>
                     </div>
                   </div>

@@ -136,9 +136,14 @@ export default function Profile() {
                 <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
                   <p className="text-white/60 font-mono text-sm">ID: {user.id.slice(0, 8)}...</p>
                   {user.role === 'teacher' && (
-                    <span className="bg-accent text-primary px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest">
-                      Учитель — {getSubjectLabel((user as any).subject || 'general')}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="bg-accent text-primary px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-accent/20">
+                        Учитель: {getSubjectLabel((user as any).subject || 'general')}
+                      </span>
+                      <span className="bg-white/10 text-white/80 px-3 py-1 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-white/10">
+                        Статус: Активен
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -258,15 +263,36 @@ export default function Profile() {
               <div className="text-xs font-bold text-slate-400 uppercase tracking-tighter">{stat.label}</div>
             </motion.div>
           )) : (
-            <div className="col-span-4 bg-white p-6 rounded-3xl border border-slate-100 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-black text-primary uppercase tracking-tighter">Активность преподавателя</h3>
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Вы помогаете ученикам достигать целей</p>
+            <>
+              <motion.div 
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center"
+              >
+                <div className="mb-2 p-2 bg-slate-50 rounded-xl"><Layers className="text-primary" /></div>
+                <div className="text-xl font-black text-slate-800">{results.length > 0 ? results.length : '—'}</div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Курсы</div>
+              </motion.div>
+              <motion.div 
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center"
+              >
+                <div className="mb-2 p-2 bg-slate-50 rounded-xl"><UserIcon className="text-accent" /></div>
+                <div className="text-xl font-black text-slate-800">—</div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Ученики</div>
+              </motion.div>
+              <div className="col-span-2 bg-white p-6 rounded-3xl border border-slate-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-black text-primary uppercase tracking-tighter">Опыт преподавания</h3>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Профильный предмет: {getSubjectLabel((user as any).subject || 'general')}</p>
+                </div>
+                <div className="bg-green-50 px-4 py-2 rounded-2xl border border-green-100">
+                  <span className="text-green-600 font-black text-[10px] uppercase tracking-widest">Проверен</span>
+                </div>
               </div>
-              <div className="bg-accent/10 px-4 py-2 rounded-2xl">
-                <span className="text-primary font-black text-sm">Status: Active</span>
-              </div>
-            </div>
+            </>
           )}
         </div>
 

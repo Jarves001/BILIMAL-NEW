@@ -98,8 +98,13 @@ export default function TeacherDashboard() {
     if (activeTab === 'stats' && user) {
       const fetchStats = async () => {
         try {
+          const teacherSubject = (user as any).subject || 'general';
           const studentsSnap = await getDocs(query(collection(db, 'users'), where('role', '==', 'student')));
-          const coursesSnap = await getDocs(query(collection(db, 'courses'), where('teacher_id', '==', user.id)));
+          const coursesSnap = await getDocs(query(
+            collection(db, 'courses'), 
+            where('teacher_id', '==', user.id),
+            where('subject', '==', teacherSubject)
+          ));
           const resultsSnap = await getDocs(collection(db, 'results'));
           
           const studentsList = studentsSnap.docs.map(d => d.data());
@@ -186,9 +191,14 @@ export default function TeacherDashboard() {
     async function fetchData() {
       if (!user) return;
       try {
+        const teacherSubject = (user as any).subject || 'general';
         const q = user.role === 'admin' 
           ? collection(db, 'courses')
-          : query(collection(db, 'courses'), where('teacher_id', '==', user.id));
+          : query(
+              collection(db, 'courses'), 
+              where('teacher_id', '==', user.id),
+              where('subject', '==', teacherSubject)
+            );
         
         const coursesSnap = await getDocs(q);
         const coursesList = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -246,11 +256,11 @@ export default function TeacherDashboard() {
       const docRef = await addDoc(collection(db, 'courses'), {
         title: newCourse.title,
         description: newCourse.description,
-        subject: (user as any).subject || 'math',
+        subject: (user as any).subject || 'general',
         teacher_id: user.id,
         created_at: new Date().toISOString()
       });
-      setCourses([{ id: docRef.id, title: newCourse.title, description: newCourse.description, teacher_id: user.id }, ...courses]);
+      setCourses([{ id: docRef.id, title: newCourse.title, description: newCourse.description, teacher_id: user.id, subject: (user as any).subject || 'general' }, ...courses]);
       setIsAddingCourse(false);
       setNewCourse({ title: '', description: '' });
     } catch (err) {
@@ -757,7 +767,10 @@ export default function TeacherDashboard() {
         <div className="fixed inset-0 bg-primary/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-lg rounded-3xl p-8 shadow-2xl relative">
             <button onClick={() => setIsAddingCourse(false)} className="absolute top-6 right-6 text-slate-300 hover:text-primary"><X size={24} /></button>
-            <h2 className="text-2xl font-black text-primary mb-6 uppercase tracking-tighter">Новый курс</h2>
+            <h2 className="text-2xl font-black text-primary mb-2 uppercase tracking-tighter">Новый курс</h2>
+            <p className="text-[10px] text-accent font-black uppercase tracking-[0.2em] mb-6">
+              Предмет: {getSubjectLabel((user as any).subject || 'general')}
+            </p>
             <form onSubmit={handleCreateCourse} className="space-y-6">
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Название</label>

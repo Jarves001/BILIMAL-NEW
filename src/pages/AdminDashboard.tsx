@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, query, getDocs, doc, updateDoc, where, getDoc } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
-import { Users, GraduationCap, CheckCircle2, XCircle, Clock, BookOpen, UserCheck, ShieldAlert, RefreshCw } from 'lucide-react';
+import { Users, GraduationCap, CheckCircle2, XCircle, Clock, BookOpen, UserCheck, ShieldAlert, RefreshCw, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { getSubjectLabel, SUBJECTS } from '../constants';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -104,6 +105,58 @@ export default function AdminDashboard() {
       setApplications(prev => prev.map(a => a.id === appId ? { ...a, status: 'rejected' } : a));
     } catch (err) {
       console.error('Error rejecting teacher:', err);
+    }
+  };
+
+  const handleUpdateTeacherSubject = async (teacherId: string, newSubject: string) => {
+    try {
+      await updateDoc(doc(db, 'users', teacherId), { subject: newSubject });
+      setTeachers(prev => prev.map(t => t.id === teacherId ? { ...t, subject: newSubject } : t));
+      alert('Предмет успешно обновлен!');
+    } catch (err) {
+      console.error('Error updating subject:', err);
+      alert('Ошибка при обновлении предмета');
+    }
+  };
+
+  const handleGrantSubscription = async (studentId: string, plan: string) => {
+    try {
+      const subRef = doc(db, 'users', studentId, 'subscription', 'current');
+      const endDate = new Date();
+      if (plan === 'yearly') {
+        endDate.setFullYear(endDate.getFullYear() + 1);
+      } else {
+        endDate.setMonth(endDate.getMonth() + 1);
+      }
+
+      await updateDoc(doc(db, 'users', studentId), { has_video_access: true });
+      // Note: if the document doesn't exist, updateDoc might fail. In this case, use setDoc.
+      // But we checked existence in fetchData.
+      try {
+        await updateDoc(subRef, {
+          plan,
+          start_date: new Date().toISOString(),
+          end_date: endDate.toISOString(),
+          exams_left: plan === 'yearly' ? 50 : 5,
+          has_video_access: true
+        });
+      } catch (e) {
+        // If doc doesn't exist, create it
+        const { setDoc } = await import('firebase/firestore');
+        await setDoc(subRef, {
+          plan,
+          start_date: new Date().toISOString(),
+          end_date: endDate.toISOString(),
+          exams_left: plan === 'yearly' ? 50 : 5,
+          has_video_access: true
+        });
+      }
+
+      alert(`Подписка "${plan}" успешно выдана!`);
+      fetchData();
+    } catch (err) {
+      console.error('Error granting subscription:', err);
+      alert('Ошибка при выдаче подписки');
     }
   };
 
@@ -221,15 +274,27 @@ export default function AdminDashboard() {
                       </div>
                     </td>
                     <td className="px-6 py-5">
-                      {s.subscription ? (
-                        <span className="px-3 py-1 bg-green-50 text-green-700 text-[10px] font-black uppercase tracking-widest rounded-full border border-green-100">
-                          {s.subscription.plan}
-                        </span>
-                      ) : (
-                        <span className="px-3 py-1 bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-slate-100">
-                          Нет
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {s.subscription ? (
+                          <span className="px-3 py-1 bg-green-50 text-green-700 text-[10px] font-black uppercase tracking-widest rounded-full border border-green-100">
+                            {s.subscription.plan}
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1 bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-slate-100">
+                            Нет
+                          </span>
+                        )}
+                        <select 
+                          onChange={(e) => handleGrantSubscription(s.id, e.target.value)}
+                          className="bg-slate-100 border-none rounded-lg text-[8px] font-black uppercase px-2 py-1 outline-none cursor-pointer"
+                          value=""
+                        >
+                          <option value="" disabled>Выдать</option>
+                          <option value="single">1 Предмет</option>
+                          <option value="monthly">Месяц</option>
+                          <option value="yearly">Год</option>
+                        </select>
+                      </div>
                     </td>
                     <td className="px-6 py-5 font-black text-primary">{s.totalScore} XP</td>
                   </tr>
@@ -255,9 +320,18 @@ export default function AdminDashboard() {
                     {t.name?.charAt(0)}
                   </div>
                   <h3 className="font-black text-primary text-lg mb-1">{t.name}</h3>
-                  <p className="text-xs font-bold text-accent uppercase tracking-widest mb-4">
-                    {t.subject === 'math' ? 'Математика' : t.subject === 'logic' ? 'Логика' : t.subject === 'languages' ? 'Языки' : 'Анализ текста'}
-                  </p>
+                  <div className="mb-4">
+                    <select 
+                      value={t.subject || 'general'}
+                      onChange={(e) => handleUpdateTeacherSubject(t.id, e.target.value)}
+                      className="w-full bg-slate-50 border-none rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-accent outline-none cursor-pointer hover:bg-slate-100 transition-colors"
+                    >
+                      <option value="general">Выберите предмет</option>
+                      {SUBJECTS.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="flex items-center gap-2 text-slate-400 mb-6">
                     <UserCheck size={14} />
                     <span className="text-[10px] font-bold uppercase tracking-widest">Active Member</span>
