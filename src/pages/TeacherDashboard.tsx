@@ -381,31 +381,26 @@ export default function TeacherDashboard() {
       for (const block of blocks) {
         if (!block.trim()) continue;
         
-        const lines = block.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-        if (lines.length < 2) continue;
+        // Find question text (everything before the first option)
+        const qMatch = block.match(/^([^\n]+)/);
+        let question = qMatch ? qMatch[1].trim() : '';
 
-        let question = '';
         let options: Record<string, string> = { A: '', B: '', C: '', D: '' };
         let correctAnswer = '';
 
-        // First line is usually the question text
-        question = lines[0];
-
-        // Look for options A, B, C, D and Answer
-        lines.forEach(line => {
-          const optMatch = line.match(/^([A-Da-d])[\)\.\-\s]+(.*)/);
-          if (optMatch) {
-            const letter = optMatch[1].toUpperCase();
-            options[letter] = optMatch[2].trim();
-          }
-
-          const ansMatch = line.match(/(?:Ответ|Answer|Correct)[:\s]*([A-Da-d])/i);
-          if (ansMatch) {
-            correctAnswer = ansMatch[1].toUpperCase();
-          }
+        // Find all options A), B), ... even if they are on the same line
+        const optMatches = [...block.matchAll(/([A-D])[\)\.\-\s]+([^\n]+?)(?=\s+[A-D][\)\.\-\s]|$|Ответ:|Answer:)/gi)];
+        optMatches.forEach(m => {
+          const letter = m[1].toUpperCase();
+          options[letter] = m[2].trim();
         });
 
-        // If and only if we found content, add it
+        // Find answer
+        const ansMatch = block.match(/(?:Ответ|Answer|Correct)[:\s]*([A-D])/i);
+        if (ansMatch) {
+          correctAnswer = ansMatch[1].toUpperCase();
+        }
+
         if (question && options.A) {
           questionsData.push({
             question,
@@ -1430,7 +1425,10 @@ export default function TeacherDashboard() {
                   </div>
                   <div>
                     <h3 className="font-black text-primary uppercase tracking-tight">Умный разбор теста</h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Вставьте текст с вопросами и вариантами</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Вставьте текст с вопросами и вариантами</p>
+                    <p className="text-[9px] font-medium text-accent uppercase tracking-tighter bg-accent/10 px-2 py-1 rounded inline-block">
+                      Формат: 1. Вопрос? A) вариант B) вариант C) вариант D) вариант Ответ: A
+                    </p>
                   </div>
                 </div>
 
