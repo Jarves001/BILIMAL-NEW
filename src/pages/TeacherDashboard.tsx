@@ -138,23 +138,40 @@ export default function TeacherDashboard() {
     }
   }, [activeTab, user]);
 
-  // Chat logic - fetch students
+  // Chat logic - fetch students who sent messages for this teacher's subject
   useEffect(() => {
     if (activeTab === 'chat' && user) {
       const fetchStudents = async () => {
-        const snap = await getDocs(query(collection(db, 'users'), where('role', '==', 'student')));
-        setChatStudents(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        const teacherSubject = (user as any).subject || 'general';
+        const q = query(
+          collection(db, 'messages'),
+          where('subject', '==', teacherSubject),
+          where('receiverId', 'in', [user.uid, 'admin']) // Also check messages sent to 'admin' but if subject matches
+        );
+        const snap = await getDocs(q);
+        const studentIds = [...new Set(snap.docs.map(d => d.data().senderId))].filter(id => id !== user.uid);
+        
+        const studentsList = [];
+        for (const sId of studentIds) {
+          const sDoc = await getDoc(doc(db, 'users', sId as string));
+          if (sDoc.exists()) {
+            studentsList.push({ id: sDoc.id, ...sDoc.data() });
+          }
+        }
+        setChatStudents(studentsList);
       };
       fetchStudents();
     }
   }, [activeTab, user]);
 
-  // Chat logic - real-time messages
+  // Chat logic - real-time messages for subject
   useEffect(() => {
     if (selectedChatUser && user && activeTab === 'chat') {
+      const teacherSubject = (user as any).subject || 'general';
       const q = query(
         collection(db, 'messages'),
         where('participants', 'array-contains', user.uid),
+        where('subject', '==', teacherSubject),
         orderBy('createdAt', 'asc')
       );
       
@@ -178,6 +195,7 @@ export default function TeacherDashboard() {
         text: newChatMessage,
         senderId: user.uid,
         receiverId: selectedChatUser.id,
+        subject: (user as any).subject || 'general',
         participants: [user.uid, selectedChatUser.id],
         createdAt: serverTimestamp()
       });

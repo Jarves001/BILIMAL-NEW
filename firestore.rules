@@ -158,5 +158,15 @@ service cloud.firestore {
       allow create: if isSignedIn() && isValidResult(incoming());
       allow update, delete: if isAdmin();
     }
+
+    match /messages/{messageId} {
+      allow get: if isSignedIn() && (resource.data.participants.hasAny([request.auth.uid]) || isAdmin());
+      allow list: if isSignedIn() && (
+        resource.data.participants.hasAny([request.auth.uid]) || 
+        isAdmin() ||
+        (isTeacher() && resource.data.subject == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.subject)
+      );
+      allow create: if isSignedIn();
+    }
   }
 }

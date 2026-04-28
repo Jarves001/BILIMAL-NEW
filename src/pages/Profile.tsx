@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { auth, db } from '../lib/firebase';
 import { signOut } from 'firebase/auth';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { getSubjectLabel } from '../constants';
 import { 
   User as UserIcon, 
@@ -31,7 +31,11 @@ interface Result {
 }
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user: currentUser } = useAuth();
+  const [searchParams] = useSearchParams();
+  const targetUid = searchParams.get('uid');
+  
+  const [user, setUser] = useState<any>(null);
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(true);
   const [application, setApplication] = useState<any>(null);
@@ -44,13 +48,25 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    if (!user) return;
-
-    async function fetchHistory() {
+    async function fetchUserData() {
+      setLoading(true);
       try {
+        let userData: any = null;
+        if (targetUid) {
+          const uDoc = await getDoc(doc(db, 'users', targetUid));
+          if (uDoc.exists()) {
+            userData = { id: uDoc.id, ...uDoc.data() };
+          }
+        } else {
+          userData = currentUser;
+        }
+        
+        if (!userData) return;
+        setUser(userData);
+
         const q = query(
           collection(db, 'results'),
-          where('user_id', '==', user?.id),
+          where('user_id', '==', userData.id),
           limit(20)
         );
         const snap = await getDocs(q);
@@ -74,34 +90,27 @@ export default function Profile() {
           level: currentLevel,
           xpToNext
         });
+
+        // Fetch Application
+        const appQ = query(
+          collection(db, 'teacher_applications'),
+          where('user_id', '==', userData.id),
+          orderBy('applied_at', 'desc'),
+          limit(1)
+        );
+        const appSnap = await getDocs(appQ);
+        if (!appSnap.empty) {
+          setApplication({ id: appSnap.docs[0].id, ...appSnap.docs[0].data() });
+        }
       } catch (err) {
-        console.error('Failed to fetch history:', err);
+        console.error('Failed to fetch profile data:', err);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchHistory();
-    fetchApplication();
-  }, [user]);
-
-  async function fetchApplication() {
-    if (!user) return;
-    try {
-      const q = query(
-        collection(db, 'teacher_applications'),
-        where('user_id', '==', user?.id),
-        orderBy('applied_at', 'desc'),
-        limit(1)
-      );
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        setApplication({ id: snap.docs[0].id, ...snap.docs[0].data() });
-      }
-    } catch (err) {
-      console.error('Failed to fetch application:', err);
-    }
-  }
+    fetchUserData();
+  }, [currentUser, targetUid]);
 
   const handleLogout = async () => {
     try {
@@ -215,9 +224,11 @@ export default function Profile() {
                   </h4>
                   <div className="flex items-center gap-4">
                     <button 
-                      onClick={() => fetchApplication()}
+                      onClick={() => {
+                        window.location.reload(); 
+                      }}
                       className="p-1.5 hover:bg-black/5 rounded-lg transition-colors"
-                      title="Обновить статус"
+                      title="Обновить данные"
                     >
                       <History size={14} className={
                         application.status === 'pending' ? 'text-amber-500' : 

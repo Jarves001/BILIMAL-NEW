@@ -4,9 +4,9 @@ import api from '../api/client';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, limit, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
-import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX, Trophy, Target, MessageSquare, AlertCircle, CheckCircle, X, Send, Play } from 'lucide-react';
+import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX, Trophy, Target, MessageSquare, AlertCircle, CheckCircle, X, Send, Play, Book } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { getSubjectLabel } from '../constants';
+import { getSubjectLabel, SUBJECTS } from '../constants';
 
 interface Course {
   id: string;
@@ -21,7 +21,8 @@ export default function Dashboard() {
   const [searchParams] = useSearchParams();
   const subjectFilter = searchParams.get('subject');
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [teachers, setTeachers] = useState<any[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedTeacher, setSelectedTeacher] = useState<any | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMsg, setNewMsg] = useState('');
@@ -29,43 +30,62 @@ export default function Dashboard() {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isChatOpen && user) {
-      const fetchTeachers = async () => {
-        const snap = await getDocs(query(collection(db, 'users'), where('role', '==', 'teacher')));
-        setTeachers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    if (isChatOpen && user && selectedSubject) {
+      const fetchTeacherForSubject = async () => {
+        setChatLoading(true);
+        const q = query(collection(db, 'users'), 
+          where('role', '==', 'teacher'),
+          where('subject', '==', selectedSubject),
+          limit(1)
+        );
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          setSelectedTeacher({ id: snap.docs[0].id, ...snap.docs[0].data() });
+        } else {
+          setSelectedTeacher(null);
+        }
+        setChatLoading(false);
       };
-      fetchTeachers();
+      fetchTeacherForSubject();
     }
-  }, [isChatOpen, user]);
+  }, [isChatOpen, user, selectedSubject]);
 
   useEffect(() => {
-    if (selectedTeacher && user && isChatOpen) {
+    if (selectedSubject && user && isChatOpen) {
       const q = query(
         collection(db, 'messages'),
         where('participants', 'array-contains', user.uid),
+        where('subject', '==', selectedSubject),
         orderBy('createdAt', 'asc')
       );
       
       const unsubscribe = onSnapshot(q, (snap) => {
-        const msgs = snap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter((m: any) => m.participants.includes(selectedTeacher.id));
+        const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         setMessages(msgs);
         setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
       });
       return () => unsubscribe();
     }
-  }, [selectedTeacher, user, isChatOpen]);
+  }, [selectedSubject, user, isChatOpen]);
 
   const sendMsg = async (e: FormEvent) => {
     e.preventDefault();
-    if (!newMsg.trim() || !user || !selectedTeacher) return;
+    if (!newMsg.trim() || !user || !selectedSubject) return;
     try {
+      // Find teacher if not already found (fallback)
+      let teacherId = selectedTeacher?.id;
+      if (!teacherId) {
+        const q = query(collection(db, 'users'), where('role', '==', 'teacher'), where('subject', '==', selectedSubject), limit(1));
+        const snap = await getDocs(q);
+        if (!snap.empty) teacherId = snap.docs[0].id;
+      }
+
       await addDoc(collection(db, 'messages'), {
         text: newMsg,
         senderId: user.uid,
-        receiverId: selectedTeacher.id,
-        participants: [user.uid, selectedTeacher.id],
+        receiverId: teacherId || 'admin', // send to admin if no teacher for this subject yet
+        subject: selectedSubject,
+        participants: [user.uid, teacherId || 'admin'],
         createdAt: serverTimestamp()
       });
       setNewMsg('');
@@ -373,21 +393,21 @@ export default function Dashboard() {
               {/* Sidebar */}
               <div className="w-64 border-r bg-slate-50 flex flex-col">
                 <div className="p-6 border-b bg-white">
-                  <h3 className="font-bold text-primary text-xs uppercase tracking-widest">Учителя</h3>
+                  <h3 className="font-bold text-primary text-xs uppercase tracking-widest">Предметы</h3>
                 </div>
                 <div className="flex-1 overflow-y-auto">
-                  {teachers.map(t => (
+                  {SUBJECTS.map(s => (
                     <button 
-                      key={t.id}
-                      onClick={() => setSelectedTeacher(t)}
-                      className={`w-full p-4 flex items-center gap-3 hover:bg-slate-100 transition-colors border-b border-slate-100 ${selectedTeacher?.id === t.id ? 'bg-accent/10 border-l-4 border-l-accent' : ''}`}
+                      key={s.id}
+                      onClick={() => setSelectedSubject(s.id)}
+                      className={`w-full p-4 flex items-center gap-3 hover:bg-slate-100 transition-colors border-b border-slate-100 ${selectedSubject === s.id ? 'bg-accent/10 border-l-4 border-l-accent' : ''}`}
                     >
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center font-bold text-primary italic shrink-0 text-xs text-uppercase">
-                        {t.name?.charAt(0)}
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold italic shrink-0 text-xs transition-all ${selectedSubject === s.id ? 'bg-accent text-primary' : 'bg-primary/10 text-primary'}`}>
+                        {s.name?.charAt(0)}
                       </div>
                       <div className="text-left overflow-hidden">
-                        <p className="font-bold text-[11px] text-primary truncate leading-none mb-1">{t.name}</p>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none">Преподаватель</p>
+                        <p className={`font-bold text-[11px] truncate leading-none mb-1 ${selectedSubject === s.id ? 'text-primary' : 'text-slate-600'}`}>{s.name}</p>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none">Консультация</p>
                       </div>
                     </button>
                   ))}
@@ -396,16 +416,18 @@ export default function Dashboard() {
 
               {/* Chat Area */}
               <div className="flex-1 flex flex-col bg-white">
-                {selectedTeacher ? (
+                {selectedSubject ? (
                   <>
                     <div className="p-6 border-b flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center font-bold text-primary italic">
-                          {selectedTeacher.name?.charAt(0)}
+                          {selectedSubject.charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <h3 className="font-bold text-primary text-sm">{selectedTeacher.name}</h3>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Онлайн-консультация</p>
+                          <h3 className="font-bold text-primary text-sm">{getSubjectLabel(selectedSubject)}</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                            {selectedTeacher ? `Учитель: ${selectedTeacher.name}` : 'Поиск преподавателя...'}
+                          </p>
                         </div>
                       </div>
                       <button onClick={() => setIsChatOpen(false)} className="text-slate-300 hover:text-primary"><X size={20} /></button>
@@ -416,7 +438,7 @@ export default function Dashboard() {
                         return (
                           <div key={m.id || i} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
                             <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center font-bold text-xs italic ${isMe ? 'bg-accent text-primary' : 'bg-primary/10 text-primary'}`}>
-                              {isMe ? 'Я' : selectedTeacher.name?.charAt(0)}
+                              {isMe ? 'Я' : selectedTeacher?.name?.charAt(0) || '?'}
                             </div>
                             <div className={`p-4 rounded-2xl max-w-[80%] shadow-sm ${isMe ? 'bg-primary text-white rounded-tr-none' : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none'}`}>
                               <p className="text-sm leading-relaxed">{m.text}</p>
@@ -424,6 +446,11 @@ export default function Dashboard() {
                           </div>
                         );
                       })}
+                      {!selectedTeacher && !chatLoading && (
+                        <div className="text-center p-4 bg-amber-50 text-amber-700 rounded-xl text-xs font-bold border border-amber-100 opacity-60">
+                          Преподаватель по этому предмету пока не назначен. Ваше сообщение увидит администрация.
+                        </div>
+                      )}
                       <div ref={chatEndRef} />
                     </div>
                     <form onSubmit={sendMsg} className="p-4 border-t bg-slate-50">
@@ -431,7 +458,7 @@ export default function Dashboard() {
                         <input 
                           value={newMsg}
                           onChange={e => setNewMsg(e.target.value)}
-                          placeholder="Задайте вопрос по уроку..."
+                          placeholder={`Напишите ваш вопрос по предмету ${getSubjectLabel(selectedSubject)}...`}
                           className="w-full bg-white pl-5 pr-20 py-4 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-accent outline-none text-sm shadow-sm"
                         />
                         <button className="absolute right-2 top-2 bottom-2 bg-primary text-white px-5 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-primary/90">
@@ -445,8 +472,8 @@ export default function Dashboard() {
                     <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-300 mb-6">
                       <MessageSquare size={32} />
                     </div>
-                    <h3 className="font-bold text-primary mb-2">Ваши чаты</h3>
-                    <p className="text-xs text-slate-400 max-w-xs mx-auto">Выберите преподавателя слева, чтобы задать вопрос или получить консультацию по материалам.</p>
+                    <h3 className="font-bold text-primary mb-2">Ваши чаты по предметам</h3>
+                    <p className="text-xs text-slate-400 max-w-xs mx-auto">Выберите интересующий вас предмет слева, чтобы задать вопрос соответствующему преподавателю.</p>
                   </div>
                 )}
               </div>
