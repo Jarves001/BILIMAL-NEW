@@ -67,11 +67,25 @@ service cloud.firestore {
     }
 
     function isValidTask(data) {
-      return data.keys().hasAll(['question', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'explanation'])
-          && data.keys().size() == 7
+      let baseKeys = ['question', 'explanation', 'type', 'correct_answer'];
+      return data.keys().hasAll(baseKeys)
           && data.question is string && data.question.size() <= 1000
-          && data.correct_answer in ['A', 'B', 'C', 'D']
-          && data.explanation is string && data.explanation.size() <= 2000;
+          && data.explanation is string && data.explanation.size() <= 2000
+          && data.type in ['choice', 'open', 'multi_choice']
+          && (!data.keys().contains('image_url') || (data.image_url is string && data.image_url.size() <= 1000))
+          && (
+            (data.type == 'choice' && 
+             data.keys().hasAll(['option_a', 'option_b', 'option_c', 'option_d']) && 
+             data.keys().size() >= 8 &&
+             data.correct_answer in ['A', 'B', 'C', 'D']) ||
+            (data.type == 'multi_choice' && 
+             data.keys().hasAll(['option_a', 'option_b', 'option_c', 'option_d']) && 
+             data.keys().size() >= 8 &&
+             data.correct_answer is string) ||
+            (data.type == 'open' && 
+             data.keys().size() >= 4 && 
+             data.correct_answer is string)
+          );
     }
 
     function isValidResult(data) {

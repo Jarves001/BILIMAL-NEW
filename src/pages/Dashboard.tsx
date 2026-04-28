@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/client';
 import { db } from '../lib/firebase';
-import { collection, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
-import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX, Trophy, Target, MessageSquare, AlertCircle, CheckCircle } from 'lucide-react';
-import { motion } from 'motion/react';
+import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX, Trophy, Target, MessageSquare, AlertCircle, CheckCircle, X, Send } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { getSubjectLabel } from '../constants';
 
 interface Course {
@@ -20,7 +20,57 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const subjectFilter = searchParams.get('subject');
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [teachers, setTeachers] = useState<any[]>([]);
+  const [selectedTeacher, setSelectedTeacher] = useState<any | null>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [newMsg, setNewMsg] = useState('');
   const [application, setApplication] = useState<any>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isChatOpen && user) {
+      const fetchTeachers = async () => {
+        const snap = await getDocs(query(collection(db, 'users'), where('role', '==', 'teacher')));
+        setTeachers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      };
+      fetchTeachers();
+    }
+  }, [isChatOpen, user]);
+
+  useEffect(() => {
+    if (selectedTeacher && user && isChatOpen) {
+      const q = query(
+        collection(db, 'messages'),
+        where('participants', 'array-contains', user.uid),
+        orderBy('createdAt', 'asc')
+      );
+      
+      const unsubscribe = onSnapshot(q, (snap) => {
+        const msgs = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter((m: any) => m.participants.includes(selectedTeacher.id));
+        setMessages(msgs);
+        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      });
+      return () => unsubscribe();
+    }
+  }, [selectedTeacher, user, isChatOpen]);
+
+  const sendMsg = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!newMsg.trim() || !user || !selectedTeacher) return;
+    try {
+      await addDoc(collection(db, 'messages'), {
+        text: newMsg,
+        senderId: user.uid,
+        receiverId: selectedTeacher.id,
+        participants: [user.uid, selectedTeacher.id],
+        createdAt: serverTimestamp()
+      });
+      setNewMsg('');
+    } catch (err) { console.error(err); }
+  };
   
   const [userStats, setUserStats] = useState({
     totalScore: 0,
@@ -290,15 +340,117 @@ export default function Dashboard() {
                 ? 'Общайтесь со своими учениками и консультируйте их в режиме реального времени.'
                 : 'У вас возникли вопросы по материалу? Вы можете задать их напрямую своему куратору или преподавателю курса.'}
             </p>
-            <Link 
-              to={user?.role === 'teacher' ? '/teacher?tab=chat' : '#'}
+            <button 
+              onClick={() => setIsChatOpen(true)}
               className="w-full py-3 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold uppercase tracking-widest transition-all text-primary block text-center"
             >
               {user?.role === 'teacher' ? 'Открыть чат учителя' : 'Перейти к чату'}
-            </Link>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Chat Modal */}
+      <AnimatePresence>
+        {isChatOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsChatOpen(false)}
+              className="absolute inset-0 bg-primary/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white w-full max-w-4xl h-[600px] rounded-3xl overflow-hidden shadow-2xl relative z-10 flex"
+            >
+              {/* Sidebar */}
+              <div className="w-64 border-r bg-slate-50 flex flex-col">
+                <div className="p-6 border-b bg-white">
+                  <h3 className="font-bold text-primary text-xs uppercase tracking-widest">Учителя</h3>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  {teachers.map(t => (
+                    <button 
+                      key={t.id}
+                      onClick={() => setSelectedTeacher(t)}
+                      className={`w-full p-4 flex items-center gap-3 hover:bg-slate-100 transition-colors border-b border-slate-100 ${selectedTeacher?.id === t.id ? 'bg-accent/10 border-l-4 border-l-accent' : ''}`}
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center font-bold text-primary italic shrink-0 text-xs text-uppercase">
+                        {t.name?.charAt(0)}
+                      </div>
+                      <div className="text-left overflow-hidden">
+                        <p className="font-bold text-[11px] text-primary truncate leading-none mb-1">{t.name}</p>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none">Преподаватель</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Chat Area */}
+              <div className="flex-1 flex flex-col bg-white">
+                {selectedTeacher ? (
+                  <>
+                    <div className="p-6 border-b flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center font-bold text-primary italic">
+                          {selectedTeacher.name?.charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-primary text-sm">{selectedTeacher.name}</h3>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Онлайн-консультация</p>
+                        </div>
+                      </div>
+                      <button onClick={() => setIsChatOpen(false)} className="text-slate-300 hover:text-primary"><X size={20} /></button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/20">
+                      {messages.map((m, i) => {
+                        const isMe = m.senderId === user?.uid;
+                        return (
+                          <div key={m.id || i} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
+                            <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center font-bold text-xs italic ${isMe ? 'bg-accent text-primary' : 'bg-primary/10 text-primary'}`}>
+                              {isMe ? 'Я' : selectedTeacher.name?.charAt(0)}
+                            </div>
+                            <div className={`p-4 rounded-2xl max-w-[80%] shadow-sm ${isMe ? 'bg-primary text-white rounded-tr-none' : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none'}`}>
+                              <p className="text-sm leading-relaxed">{m.text}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div ref={chatEndRef} />
+                    </div>
+                    <form onSubmit={sendMsg} className="p-4 border-t bg-slate-50">
+                      <div className="relative">
+                        <input 
+                          value={newMsg}
+                          onChange={e => setNewMsg(e.target.value)}
+                          placeholder="Задайте вопрос по уроку..."
+                          className="w-full bg-white pl-5 pr-20 py-4 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-accent outline-none text-sm shadow-sm"
+                        />
+                        <button className="absolute right-2 top-2 bottom-2 bg-primary text-white px-5 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-primary/90">
+                          <Send size={14} />
+                        </button>
+                      </div>
+                    </form>
+                  </>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
+                    <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-300 mb-6">
+                      <MessageSquare size={32} />
+                    </div>
+                    <h3 className="font-bold text-primary mb-2">Ваши чаты</h3>
+                    <p className="text-xs text-slate-400 max-w-xs mx-auto">Выберите преподавателя слева, чтобы задать вопрос или получить консультацию по материалам.</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

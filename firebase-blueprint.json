@@ -43,6 +43,7 @@
       "type": "object",
       "properties": {
         "question": { "type": "string" },
+        "image_url": { "type": "string" },
         "optionA": { "type": "string" },
         "optionB": { "type": "string" },
         "optionC": { "type": "string" },
