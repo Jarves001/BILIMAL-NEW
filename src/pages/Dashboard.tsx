@@ -54,7 +54,7 @@ export default function Dashboard() {
     if (selectedSubject && user && isChatOpen) {
       const q = query(
         collection(db, 'messages'),
-        where('participants', 'array-contains', user.uid),
+        where('participants', 'array-contains', user.id),
         where('subject', '==', selectedSubject),
         orderBy('createdAt', 'asc')
       );
@@ -82,10 +82,10 @@ export default function Dashboard() {
 
       await addDoc(collection(db, 'messages'), {
         text: newMsg,
-        senderId: user.uid,
+        senderId: user.id,
         receiverId: teacherId || 'admin', // send to admin if no teacher for this subject yet
         subject: selectedSubject,
-        participants: [user.uid, teacherId || 'admin'],
+        participants: [user.id, teacherId || 'admin'],
         createdAt: serverTimestamp()
       });
       setNewMsg('');
@@ -434,7 +434,7 @@ export default function Dashboard() {
                     </div>
                     <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/20">
                       {messages.map((m, i) => {
-                        const isMe = m.senderId === user?.uid;
+                        const isMe = m.senderId === user?.id;
                         return (
                           <div key={m.id || i} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
                             <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center font-bold text-xs italic ${isMe ? 'bg-accent text-primary' : 'bg-primary/10 text-primary'}`}>

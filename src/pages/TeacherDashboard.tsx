@@ -146,10 +146,10 @@ export default function TeacherDashboard() {
         const q = query(
           collection(db, 'messages'),
           where('subject', '==', teacherSubject),
-          where('receiverId', 'in', [user.uid, 'admin']) // Also check messages sent to 'admin' but if subject matches
+          where('receiverId', 'in', [user.id, 'admin']) // Also check messages sent to 'admin' but if subject matches
         );
         const snap = await getDocs(q);
-        const studentIds = [...new Set(snap.docs.map(d => d.data().senderId))].filter(id => id !== user.uid);
+        const studentIds = [...new Set(snap.docs.map(d => d.data().senderId))].filter(id => id !== user.id);
         
         const studentsList = [];
         for (const sId of studentIds) {
@@ -170,7 +170,7 @@ export default function TeacherDashboard() {
       const teacherSubject = (user as any).subject || 'general';
       const q = query(
         collection(db, 'messages'),
-        where('participants', 'array-contains', user.uid),
+        where('participants', 'array-contains', user.id),
         where('subject', '==', teacherSubject),
         orderBy('createdAt', 'asc')
       );
@@ -193,10 +193,10 @@ export default function TeacherDashboard() {
     try {
       await addDoc(collection(db, 'messages'), {
         text: newChatMessage,
-        senderId: user.uid,
+        senderId: user.id,
         receiverId: selectedChatUser.id,
         subject: (user as any).subject || 'general',
-        participants: [user.uid, selectedChatUser.id],
+        participants: [user.id, selectedChatUser.id],
         createdAt: serverTimestamp()
       });
       setNewChatMessage('');
@@ -598,7 +598,7 @@ export default function TeacherDashboard() {
                   <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/20">
                     {chatMessages.length > 0 ? (
                       chatMessages.map((msg, i) => {
-                        const isMe = msg.senderId === user?.uid;
+                        const isMe = msg.senderId === user?.id;
                         return (
                           <div key={msg.id || i} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
                             <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center font-bold text-xs italic ${isMe ? 'bg-accent text-primary' : 'bg-primary/10 text-primary'}`}>
