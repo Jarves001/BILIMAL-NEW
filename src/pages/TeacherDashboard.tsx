@@ -210,7 +210,10 @@ export default function TeacherDashboard() {
   useEffect(() => {
     if (!user || (user.role !== 'teacher' && user.role !== 'admin')) return;
 
-    const teacherSubject = (user.subject || 'general').toLowerCase();
+    // Normalize subject
+    const subjectId = (user.subject || 'general').toLowerCase();
+    const subjectObj = SUBJECTS.find(s => s.id === subjectId || s.name.toLowerCase() === subjectId);
+    const normalizedSubject = subjectObj ? subjectObj.id : subjectId;
 
     setLoading(true);
     // Fetch all courses and filter in memory to handle legacy case-sensitive data
@@ -218,7 +221,12 @@ export default function TeacherDashboard() {
       const allCourses = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
       const filtered = user.role === 'admin' 
         ? allCourses 
-        : allCourses.filter(c => (c.subject || '').toLowerCase() === teacherSubject);
+        : allCourses.filter(c => {
+            const courseSub = (c.subject || '').toLowerCase();
+            const courseSubObj = SUBJECTS.find(s => s.id === courseSub || s.name.toLowerCase() === courseSub);
+            const normalizedCourseSub = courseSubObj ? courseSubObj.id : courseSub;
+            return normalizedCourseSub === normalizedSubject;
+          });
       
       setCourses(filtered);
       setLoading(false);
@@ -242,11 +250,21 @@ export default function TeacherDashboard() {
     // Listen to results collection
     const unsubscribe = onSnapshot(collection(db, 'results'), async (snap) => {
       const allResults = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
-      const relevantResults = allResults.filter(r => courseIds.includes(r.course_id));
+      
+      // Filter results that belong to the teacher's courses
+      // Or (Defensive) results where the subject matches, even if course_id is orphans
+      const relevantResults = allResults.filter(r => {
+        const isFromCourse = courseIds.includes(r.course_id);
+        return isFromCourse;
+      });
 
       const uniqueStudentIds = [...new Set(relevantResults.map(r => r.user_id))].filter(Boolean);
       
-      const studentProfiles = [];
+      if (uniqueStudentIds.length === 0) {
+        setStudents([]);
+        return;
+      }
+
       // We can fetch profiles in parallel for better performance
       const profilePromises = uniqueStudentIds.map(async (sId) => {
         try {
@@ -814,6 +832,14 @@ export default function TeacherDashboard() {
                     </tr>
                    );
                 })}
+                {students.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-20 text-center">
+                       <Users className="mx-auto text-slate-200 mb-4" size={48} />
+                       <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Ученики еще не проходили ваши тесты</p>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </motion.div>

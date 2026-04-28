@@ -90,11 +90,11 @@ service cloud.firestore {
 
     function isValidResult(data) {
       return data.keys().hasAll(['user_id', 'lesson_id', 'course_id', 'score', 'total_questions', 'completed_at'])
-          && data.keys().size() == 6
+          && data.keys().size() >= 6
           && data.user_id == request.auth.uid
           && data.score is number && data.score >= 0
           && data.total_questions is number && data.total_questions > 0
-          && (data.completed_at == request.time || data.completed_at is string);
+          && (data.completed_at == request.time || data.completed_at is string || data.completed_at is timestamp);
     }
 
     function isValidSubscription(data) {
