@@ -32,7 +32,7 @@ const compressImage = (file: File | Blob): Promise<string> => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = (event) => {
-      const img = new Image();
+      const img = document.createElement('img');
       img.src = event.target?.result as string;
       img.onload = () => {
         const canvas = document.createElement('canvas');
@@ -604,7 +604,6 @@ export default function TeacherDashboard() {
     e.stopPropagation();
     if (!window.confirm('Вы уверены, что хотите удалить весь курс? Это действие необратимо.')) return;
     try {
-      const { deleteDoc } = await import('firebase/firestore');
       await deleteDoc(doc(db, 'courses', courseId));
       setCourses(courses.filter(c => c.id !== courseId));
     } catch (err) {

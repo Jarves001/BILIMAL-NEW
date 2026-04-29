@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../lib/firebase';
-import { collection, query, getDocs, doc, updateDoc, where, getDoc } from 'firebase/firestore';
+import { collection, query, getDocs, doc, updateDoc, where, getDoc, setDoc } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { Users, GraduationCap, CheckCircle2, XCircle, Clock, BookOpen, UserCheck, ShieldAlert, RefreshCw, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -143,7 +143,6 @@ export default function AdminDashboard() {
         });
       } catch (e) {
         // If doc doesn't exist, create it
-        const { setDoc } = await import('firebase/firestore');
         await setDoc(subRef, {
           plan,
           start_date: new Date().toISOString(),

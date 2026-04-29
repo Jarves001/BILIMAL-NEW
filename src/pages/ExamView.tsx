@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import { collection, query, getDocs, doc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
@@ -14,7 +14,8 @@ import {
   BookMarked,
   Layout,
   Trophy,
-  ArrowLeft
+  ArrowLeft,
+  Lock
 } from 'lucide-react';
 
 export default function ExamView() {
@@ -30,9 +31,14 @@ export default function ExamView() {
   const [isFinished, setIsFinished] = useState(false);
   const [score, setScore] = useState(0);
   const timerRef = useRef<any>(null);
+  const isSubscribed = user?.subscription === 'active' || user?.role === 'admin' || user?.role === 'teacher';
 
   useEffect(() => {
     async function fetchExam() {
+      if (!isSubscribed) {
+        setLoading(false);
+        return;
+      }
       if (!examId) return;
       try {
         const examDoc = await getDoc(doc(db, 'exams', examId));
@@ -108,6 +114,44 @@ export default function ExamView() {
   };
 
   if (loading) return <div className="p-20 text-center uppercase font-black text-primary tracking-widest animate-pulse">Подготовка экзамена...</div>;
+
+  if (!isSubscribed) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white max-w-lg w-full rounded-[40px] shadow-2xl p-12 text-center"
+        >
+          <div className="w-24 h-24 bg-accent/20 rounded-3xl flex items-center justify-center mx-auto mb-8 text-primary">
+            <Lock size={48} />
+          </div>
+          <h2 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Доступ ограничен</h2>
+          <p className="text-slate-400 font-bold uppercase text-xs tracking-widest mb-10">Этот экзамен доступен только подписчикам</p>
+          
+          <div className="bg-slate-50 rounded-3xl p-8 mb-8">
+            <p className="text-sm font-medium text-slate-600 leading-relaxed mb-6">
+              Активируйте подписку, чтобы получить неограниченный доступ ко всем еженедельным экзаменам, видео-урокам и консультациям с учителями.
+            </p>
+            <Link 
+              to="/subscriptions"
+              className="w-full py-5 bg-accent text-primary rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 transition-all shadow-xl shadow-accent/20"
+            >
+              Выбрать тарифный план
+            </Link>
+          </div>
+
+          <button 
+            onClick={() => navigate('/dashboard')}
+            className="text-slate-400 font-bold uppercase text-[10px] tracking-widest hover:text-primary transition-all underline"
+          >
+            Вернуться назад
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
   if (!exam) return <div className="p-20 text-center">Экзамен не найден</div>;
 
   if (isFinished) {

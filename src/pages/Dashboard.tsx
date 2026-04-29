@@ -4,7 +4,7 @@ import api from '../api/client';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, limit, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
-import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX, Trophy, Target, MessageSquare, AlertCircle, CheckCircle, X, Send, Play, Book, BookMarked, Timer } from 'lucide-react';
+import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX, Trophy, Target, MessageSquare, AlertCircle, CheckCircle, X, Send, Play, Book, BookMarked, Timer, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSubjectLabel, SUBJECTS } from '../constants';
 
@@ -19,6 +19,7 @@ export default function Dashboard() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [exams, setExams] = useState<any[]>([]);
   const { user } = useAuth();
+  const isSubscribed = user?.subscription === 'active' || user?.role === 'admin' || user?.role === 'teacher';
   const [searchParams] = useSearchParams();
   const subjectFilter = searchParams.get('subject');
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -298,9 +299,26 @@ export default function Dashboard() {
                 Еженедельные экзамены
               </h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-slate-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-slate-100 relative">
+              {!isSubscribed && (
+                <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 text-center">
+                  <div className="bg-white p-8 rounded-[30px] shadow-2xl border border-slate-100 max-w-sm">
+                    <div className="w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary">
+                      <Lock size={32} />
+                    </div>
+                    <h4 className="text-xl font-black text-primary uppercase tracking-tight mb-2">Доступ ограничен</h4>
+                    <p className="text-xs text-slate-500 font-medium mb-6">Еженедельные экзамены доступны только пользователям с активной подпиской.</p>
+                    <Link 
+                      to="/subscriptions" 
+                      className="w-full py-4 bg-accent text-primary font-black uppercase tracking-widest text-xs rounded-2xl block hover:scale-105 transition-all shadow-xl shadow-accent/20"
+                    >
+                      Активировать подписку
+                    </Link>
+                  </div>
+                </div>
+              )}
               {exams.length > 0 ? exams.map(exam => (
-                <div key={exam.id} className="bg-white p-6 hover:bg-slate-50 transition-all group flex flex-col justify-between">
+                <div key={exam.id} className={`bg-white p-6 hover:bg-slate-50 transition-all group flex flex-col justify-between ${!isSubscribed ? 'opacity-40' : ''}`}>
                   <div>
                     <h4 className="font-black text-primary leading-tight mb-2 group-hover:text-accent transition-colors">{exam.title}</h4>
                     <div className="flex gap-4 mb-4">
@@ -313,10 +331,11 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <Link 
-                    to={`/exam/${exam.id}`} 
-                    className="w-full py-3 bg-accent/10 hover:bg-accent text-primary font-black uppercase tracking-widest text-[10px] rounded-xl flex items-center justify-center gap-2 transition-all"
+                    to={isSubscribed ? `/exam/${exam.id}` : '#'} 
+                    onClick={(e) => !isSubscribed && e.preventDefault()}
+                    className={`w-full py-3 ${isSubscribed ? 'bg-accent/10 hover:bg-accent' : 'bg-slate-100 cursor-not-allowed'} text-primary font-black uppercase tracking-widest text-[10px] rounded-xl flex items-center justify-center gap-2 transition-all`}
                   >
-                    Начать экзамен
+                    {isSubscribed ? 'Начать экзамен' : 'Недоступно'}
                     <ChevronRight size={14} />
                   </Link>
                 </div>

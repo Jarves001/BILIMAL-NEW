@@ -23,6 +23,7 @@ export default function CourseView() {
   const { id } = useParams();
   const [course, setCourse] = useState<Course | null>(null);
   const { user } = useAuth();
+  const isSubscribed = user?.subscription === 'active' || user?.role === 'admin' || user?.role === 'teacher';
   const navigate = useNavigate();
 
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
@@ -43,12 +44,11 @@ export default function CourseView() {
         );
         const lessonsSnap = await getDocs(lessonsQuery);
         
-        const sub = user?.subInfo || { has_video_access: user?.role === 'admin' || user?.role === 'teacher' };
-        
-        const lessonsData = lessonsSnap.docs.map(doc => {
+        const lessonsData = lessonsSnap.docs.map((doc, idx) => {
           const data = doc.data();
-          const isLocked = !sub.has_video_access && data.video_url && data.order_index > 0; // Example lock
-          return { id: doc.id, ...data } as Lesson;
+          // Lock all lessons except the first one for non-subscribers
+          const isLocked = !isSubscribed && idx > 0;
+          return { id: doc.id, ...data, video_locked: isLocked } as Lesson;
         });
 
         setCourse({
@@ -193,12 +193,18 @@ export default function CourseView() {
             <div className="relative z-10">
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <Lock size={18} className="text-accent" />
-                Полный доступ
+                {isSubscribed ? 'Полный доступ активен' : 'Полный доступ'}
               </h3>
               <p className="text-xs text-white/60 leading-relaxed mb-6 italic">
-                Откройте доступ ко всем 20+ урокам курса и расширенной базе вопросов НИШ.
+                {isSubscribed 
+                  ? 'Вам доступны все уроки курса и база вопросов без ограничений.' 
+                  : 'Откройте доступ ко всем 20+ урокам курса и расширенной базе вопросов НИШ.'}
               </p>
-              <button className="w-full btn-accent !text-primary">Активировать</button>
+              {!isSubscribed && (
+                <Link to="/subscriptions" className="w-full py-3 bg-accent text-primary rounded-xl font-bold text-[10px] uppercase tracking-widest hover:scale-105 transition-all flex items-center justify-center gap-2">
+                  Активировать
+                </Link>
+              )}
             </div>
             <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-accent/10 rounded-full blur-2xl"></div>
           </div>
