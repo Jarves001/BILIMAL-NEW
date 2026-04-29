@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import api from '../api/client';
+import { db } from '../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { Check, Zap, Award, Crown } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -61,7 +62,9 @@ export default function Subscriptions() {
 
   useEffect(() => {
     if (user) {
-      api.get('/my-subscription').then(res => setCurrentSub(res.data));
+      getDoc(doc(db, 'users', user.id, 'subscription', 'current'))
+        .then(snap => snap.exists() ? setCurrentSub(snap.data()) : setCurrentSub(null))
+        .catch(err => console.error('Failed to fetch subscription:', err));
     }
   }, [user]);
 
