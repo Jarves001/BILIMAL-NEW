@@ -65,6 +65,8 @@ export default function Dashboard() {
         const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         setMessages(msgs);
         setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      }, (error) => {
+        console.error('Error fetching messages in Dashboard:', error);
       });
       return () => unsubscribe();
     }
@@ -170,6 +172,8 @@ export default function Dashboard() {
         const unsubscribe = onSnapshot(q, (snap) => {
           const examData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setExams(examData);
+        }, (error) => {
+          console.error('Error fetching exams in Dashboard:', error);
         });
         return unsubscribe;
       } catch (err) {

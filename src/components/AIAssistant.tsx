@@ -4,9 +4,19 @@ import { Bot, X, Send, Sparkles } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import Markdown from 'react-markdown';
 
-// Initialize AI globally so it's ready.
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Initialize AI lazily to prevent process is not defined error on Vercel
+let ai: any = null;
 let chatInstance: any = null;
+
+function getApiKey() {
+  if (typeof process !== 'undefined' && process.env && process.env.GEMINI_API_KEY) {
+    return process.env.GEMINI_API_KEY;
+  }
+  if (typeof import.meta !== 'undefined' && import.meta.env && (import.meta.env as any).VITE_GEMINI_API_KEY) {
+    return (import.meta.env as any).VITE_GEMINI_API_KEY;
+  }
+  return '';
+}
 
 export default function AIAssistant() {
   const { user } = useAuth();
@@ -34,6 +44,14 @@ export default function AIAssistant() {
     setIsTyping(true);
 
     try {
+      if (!ai) {
+        const apiKey = getApiKey();
+        if (!apiKey) {
+          throw new Error("Не настроен API ключ для ИИ (GEMINI_API_KEY).");
+        }
+        ai = new GoogleGenAI({ apiKey });
+      }
+
       if (!chatInstance) {
         chatInstance = ai.chats.create({
           model: "gemini-3.1-pro-preview",

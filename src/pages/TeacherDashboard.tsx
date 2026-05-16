@@ -72,7 +72,7 @@ export default function TeacherDashboard() {
   const [courses, setCourses] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'content' | 'stats' | 'students' | 'chat'>(tabParam || 'content');
+  const [activeTab, setActiveTab] = useState<'content' | 'exams' | 'stats' | 'students' | 'chat'>(tabParam || 'content');
   const [isAddingCourse, setIsAddingCourse] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [isAddingLesson, setIsAddingLesson] = useState(false);
@@ -90,7 +90,7 @@ export default function TeacherDashboard() {
   const [newLesson, setNewLesson] = useState({ 
     title: '', 
     videoUrl: '', 
-    tasks: [{ type: 'choice', question: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'A', explanation: '' }]
+    tasks: [{ type: 'choice', question: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'A', explanation: '', image_url: '' }]
   });
   const [lessons, setLessons] = useState<any[]>([]);
 
@@ -195,6 +195,8 @@ export default function TeacherDashboard() {
           .filter((m: any) => m.participants.includes(selectedChatUser.id));
         setChatMessages(msgs);
         setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      }, (error) => {
+        console.error('Error fetching chat messages in TeacherDashboard:', error);
       });
       return () => unsubscribe();
     }
@@ -346,6 +348,8 @@ export default function TeacherDashboard() {
             return normalizedExamSub === normalizedSubject;
           });
       setExams(filtered);
+    }, (error) => {
+      console.error('Error fetching exams in TeacherDashboard:', error);
     });
 
     return () => unsubscribe();
@@ -569,7 +573,7 @@ export default function TeacherDashboard() {
       setNewLesson({ 
         title: '', 
         videoUrl: '', 
-        tasks: [{ type: 'choice', question: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'A', explanation: '' }] 
+        tasks: [{ type: 'choice', question: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'A', explanation: '', image_url: '' }] 
       });
     } catch (err) {
       console.error('Error creating/updating lesson:', err);
@@ -584,7 +588,7 @@ export default function TeacherDashboard() {
     setNewLesson({
       title: lesson.title,
       videoUrl: lesson.video_url || '',
-      tasks: tasks.length > 0 ? tasks : [{ type: 'choice', question: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'A', explanation: '' }]
+      tasks: tasks.length > 0 ? tasks : [{ type: 'choice', question: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: 'A', explanation: '', image_url: '' }]
     });
     setIsAddingLesson(true);
   };
@@ -614,7 +618,7 @@ export default function TeacherDashboard() {
   const handleAddTask = (type: 'choice' | 'multi_choice' | 'open' = 'choice') => {
     setNewLesson({
       ...newLesson,
-      tasks: [...newLesson.tasks, { type, question: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: type === 'open' ? '' : 'A', explanation: '' }]
+      tasks: [...newLesson.tasks, { type, question: '', option_a: '', option_b: '', option_c: '', option_d: '', correct_answer: type === 'open' ? '' : 'A', explanation: '', image_url: '' }]
     });
   };
 
