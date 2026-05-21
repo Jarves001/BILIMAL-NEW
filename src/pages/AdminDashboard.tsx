@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import { collection, query, getDocs, doc, updateDoc, where, getDoc, setDoc } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
-import { Users, GraduationCap, CheckCircle2, XCircle, Clock, BookOpen, UserCheck, ShieldAlert, RefreshCw, ChevronDown } from 'lucide-react';
+import { Users, GraduationCap, CheckCircle2, XCircle, Clock, BookOpen, UserCheck, ShieldAlert, RefreshCw, ChevronDown, Shield as ShieldIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSubjectLabel, SUBJECTS } from '../constants';
 
@@ -11,10 +11,11 @@ export default function AdminDashboard() {
   const { user } = useAuth();
   const [students, setStudents] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
+  const [admins, setAdmins] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'students' | 'teachers' | 'applications'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'teachers' | 'applications' | 'admins'>('students');
 
   const fetchData = async (isManual = false) => {
     if (isManual) setRefreshing(true);
@@ -26,9 +27,12 @@ export default function AdminDashboard() {
       // Fetch all subscriptions for all users
       const studentsList: any[] = [];
       const teachersList: any[] = [];
+      const adminsList: any[] = [];
 
       for (const u of allUsers) {
-        if (u.role === 'teacher') {
+        if (u.role === 'admin') {
+          adminsList.push(u);
+        } else if (u.role === 'teacher') {
           teachersList.push(u);
         } else if (u.role === 'student' || !u.role) {
           // Need subscription info
@@ -50,6 +54,7 @@ export default function AdminDashboard() {
 
       setStudents(studentsList);
       setTeachers(teachersList);
+      setAdmins(adminsList);
 
       // Fetch Applications
       const appsSnap = await getDocs(collection(db, 'teacher_applications'));
@@ -117,6 +122,18 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error('Error updating subject:', err);
       alert('Ошибка при обновлении предмета');
+    }
+  };
+
+  const handleUpdateRole = async (userId: string, newRole: string) => {
+    if (!window.confirm("Вы уверены, что хотите изменить роль этого пользователя?")) return;
+    try {
+      await updateDoc(doc(db, 'users', userId), { role: newRole });
+      alert('Роль успешно обновлена!');
+      fetchData(); // re-fetch to move user to correct list
+    } catch (err) {
+      console.error('Error updating role:', err);
+      alert('Ошибка при обновлении роли: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'));
     }
   };
 
@@ -212,6 +229,7 @@ export default function AdminDashboard() {
         {[
           { id: 'students', label: 'Ученики', icon: Users },
           { id: 'teachers', label: 'Учителя', icon: GraduationCap },
+          { id: 'admins', label: 'Админы', icon: ShieldIcon },
           { id: 'applications', label: 'Заявки', icon: Clock }
         ].map(tab => (
           <button
@@ -296,7 +314,20 @@ export default function AdminDashboard() {
                         </select>
                       </div>
                     </td>
-                    <td className="px-6 py-5 font-black text-primary">{s.totalScore} XP</td>
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-primary">{s.totalScore} XP</span>
+                        <select
+                           onChange={(e) => handleUpdateRole(s.id, e.target.value)}
+                           value="student"
+                           className="bg-slate-100 border-none rounded-lg text-[8px] font-black uppercase md:ml-4 px-2 py-1 outline-none cursor-pointer"
+                        >
+                           <option value="student">Ученик</option>
+                           <option value="teacher">Учитель</option>
+                           <option value="admin">Админ</option>
+                        </select>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -335,6 +366,15 @@ export default function AdminDashboard() {
                   <div className="flex items-center gap-2 text-slate-400 mb-6">
                     <UserCheck size={14} />
                     <span className="text-[10px] font-bold uppercase tracking-widest">Active Member</span>
+                    <select
+                           onChange={(e) => handleUpdateRole(t.id, e.target.value)}
+                           value="teacher"
+                           className="bg-slate-100 border-none rounded-lg text-[8px] font-black uppercase ml-auto px-2 py-1 outline-none cursor-pointer text-primary"
+                        >
+                           <option value="student">Ученик</option>
+                           <option value="teacher">Учитель</option>
+                           <option value="admin">Админ</option>
+                    </select>
                   </div>
                   <div className="flex gap-2">
                     <Link 
@@ -346,6 +386,43 @@ export default function AdminDashboard() {
                     <button className="py-2 px-4 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all">
                       <ShieldAlert size={14} />
                     </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        )}
+
+        {activeTab === 'admins' && (
+          <motion.div 
+            key="admins"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
+            {admins.map(a => (
+              <div key={a.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-bl-[100%] translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform" />
+                <div className="relative z-10">
+                  <div className="w-14 h-14 bg-accent text-primary rounded-2xl flex items-center justify-center font-bold text-xl mb-4">
+                    {a.name?.charAt(0)}
+                  </div>
+                  <h3 className="font-black text-primary text-lg mb-1">{a.name}</h3>
+                  <p className="text-[10px] text-slate-400 mb-4">{a.email}</p>
+                  
+                  <div className="flex items-center gap-2 text-slate-400 mb-6">
+                    <ShieldIcon size={14} className="text-accent" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Administrator</span>
+                    <select
+                           onChange={(e) => handleUpdateRole(a.id, e.target.value)}
+                           value="admin"
+                           className="bg-slate-100 border-none rounded-lg text-[8px] font-black uppercase ml-auto px-2 py-1 outline-none cursor-pointer text-primary"
+                        >
+                           <option value="student">Ученик</option>
+                           <option value="teacher">Учитель</option>
+                           <option value="admin">Админ</option>
+                    </select>
                   </div>
                 </div>
               </div>

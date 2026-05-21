@@ -18,7 +18,9 @@ service cloud.firestore {
       return isSignedIn() && (
         ('email' in request.auth.token && request.auth.token.email.lower() == 'jarves276@gmail.com') ||
         (request.auth.uid == 'PgAHmtZI71S98LI7KfrTWjURSU53') ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
     }
     

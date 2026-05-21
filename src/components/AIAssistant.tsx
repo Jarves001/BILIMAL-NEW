@@ -12,8 +12,9 @@ function getApiKey() {
   if (typeof process !== 'undefined' && process.env && process.env.GEMINI_API_KEY) {
     return process.env.GEMINI_API_KEY;
   }
-  if (typeof import.meta !== 'undefined' && import.meta.env && (import.meta.env as any).VITE_GEMINI_API_KEY) {
-    return (import.meta.env as any).VITE_GEMINI_API_KEY;
+  const meta = import.meta as any;
+  if (typeof meta !== 'undefined' && meta.env && meta.env.VITE_GEMINI_API_KEY) {
+    return meta.env.VITE_GEMINI_API_KEY;
   }
   return '';
 }
