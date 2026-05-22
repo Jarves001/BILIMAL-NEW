@@ -348,6 +348,129 @@ async function startServer() {
     }
   });
 
+  app.get('/api/admin/users', authenticate, async (req: any, res) => {
+    if (req.user.email !== 'jarves276@gmail.com' && (!req.user.role || req.user.role !== 'admin')) {
+      const userDoc = await db.collection('users').doc(req.user.uid).get();
+      if (userDoc.data()?.role !== 'admin' && req.user.email !== 'jarves276@gmail.com') {
+         return res.status(403).json({ error: 'Admin access required' });
+      }
+    }
+    
+    try {
+      const usersSnap = await db.collection('users').get();
+      const usersList = [];
+      
+      for (const d of usersSnap.docs) {
+        const u = { id: d.id, ...d.data() };
+        
+        if (!u.role || u.role === 'student' || u.role === 'teacher' || u.role === 'admin') {
+          try {
+            const subSnap = await db.collection('users').doc(u.id).collection('subscription').doc('current').get();
+            if (subSnap.exists) {
+              const subData = subSnap.data();
+              if (subData.end_date && new Date(subData.end_date) > new Date()) {
+                u.subscription = subData;
+              } else {
+                u.subscription = null;
+              }
+            } else {
+              u.subscription = null;
+            }
+          } catch (err) {
+            u.subscription = null;
+          }
+        }
+        
+        usersList.push(u);
+      }
+      
+      res.json(usersList);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put('/api/admin/users/:id/role', authenticate, async (req: any, res) => {
+    if (req.user.email !== 'jarves276@gmail.com' && req.user.role !== 'admin') {
+       return res.status(403).json({ error: 'Admin access required' });
+    }
+    try {
+      await db.collection('users').doc(req.params.id).update({ role: req.body.role });
+      res.json({ message: 'Role updated' });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/admin/users/:id/subscription', authenticate, async (req: any, res) => {
+    if (req.user.email !== 'jarves276@gmail.com' && req.user.role !== 'admin') {
+       return res.status(403).json({ error: 'Admin access required' });
+    }
+    try {
+      const { plan } = req.body;
+      const info = PLANS[plan as keyof typeof PLANS];
+      if (!info) return res.status(400).json({ error: 'Invalid plan' });
+      
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(startDate.getDate() + info.days);
+      
+      const subInfo = {
+        user_id: req.params.id,
+        plan,
+        price: info.price,
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString(),
+        exams_left: info.exams,
+        has_video_access: info.video,
+        has_ai_chat: info.ai
+      };
+      
+      await db.collection('users').doc(req.params.id).collection('subscription').doc('current').set(subInfo);
+      await db.collection('users').doc(req.params.id).update({
+        subscription_status: 'active'
+      });
+      
+      res.json({ message: 'Subscription granted' });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/admin/applications', authenticate, async (req: any, res) => {
+    if (req.user.email !== 'jarves276@gmail.com' && req.user.role !== 'admin') {
+       return res.status(403).json({ error: 'Admin access required' });
+    }
+    try {
+      const appsSnap = await db.collection('teacher_applications').get();
+      const appsList = appsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      res.json(appsList);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put('/api/admin/applications/:id', authenticate, async (req: any, res) => {
+    if (req.user.email !== 'jarves276@gmail.com' && req.user.role !== 'admin') {
+       return res.status(403).json({ error: 'Admin access required' });
+    }
+    try {
+      const { status, user_id } = req.body;
+      await db.collection('teacher_applications').doc(req.params.id).update({ status });
+      
+      if (status === 'approved' && user_id) {
+        const appDoc = await db.collection('teacher_applications').doc(req.params.id).get();
+        await db.collection('users').doc(user_id).update({ 
+          role: 'teacher',
+          subject: appDoc.data()?.subject 
+        });
+      }
+      res.json({ message: 'Application updated' });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // --- VITE MIDDLEWARE ---
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
