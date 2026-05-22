@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../api/client';
+import { db } from '../lib/firebase';
+import { collection, query, getDocs, doc, updateDoc, where, getDoc, setDoc } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
-import { Users, GraduationCap, CheckCircle2, XCircle, Clock, BookOpen, UserCheck, ShieldAlert, RefreshCw, ChevronDown, Shield as ShieldIcon } from 'lucide-react';
+import { Users, GraduationCap, CheckCircle2, XCircle, Clock, BookOpen, UserCheck, ShieldAlert, RefreshCw, ChevronDown, Phone, MessageCircle, Shield as ShieldIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSubjectLabel, SUBJECTS } from '../constants';
 
@@ -19,18 +20,14 @@ export default function AdminDashboard() {
   const fetchData = async (isManual = false) => {
     if (isManual) setRefreshing(true);
     try {
-      const [usersRes, appsRes] = await Promise.all([
-        api.get('/admin/users'),
-        api.get('/admin/applications')
-      ]);
-      
-      const allUsers = usersRes.data || [];
-      const appsList = appsRes.data || [];
+      // Fetch Users (Teachers and Students)
+      const usersSnap = await getDocs(collection(db, 'users'));
+      const allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
       
       const studentsList: any[] = [];
       const teachersList: any[] = [];
       const adminsList: any[] = [];
-
+      
       for (const u of allUsers) {
         if (u.role === 'admin') {
           adminsList.push(u);
@@ -39,7 +36,7 @@ export default function AdminDashboard() {
         } else if (u.role === 'student' || !u.role) {
           studentsList.push({
             ...u,
-            level: 1, // simplified for backend architecture update
+            level: 1, 
             totalScore: 0
           });
         }
@@ -48,10 +45,13 @@ export default function AdminDashboard() {
       setStudents(studentsList);
       setTeachers(teachersList);
       setAdmins(adminsList);
-      setApplications(appsList);
+
+      // Fetch Applications
+      const appsSnap = await getDocs(collection(db, 'teacher_applications'));
+      setApplications(appsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       
-    } catch (err) {
-      console.error('Error fetching admin data:', err);
+    } catch (err: any) {
+      console.error('Error fetching admin data:', err.response?.data || err.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -71,7 +71,18 @@ export default function AdminDashboard() {
     }
     
     try {
-      await api.put(`/admin/applications/${app.id}`, { status: 'approved', user_id: app.user_id });
+      // 1. Update application status
+      const appRef = doc(db, 'teacher_applications', app.id);
+      await updateDoc(appRef, { status: 'approved' });
+      
+      // 2. Update user role and subject
+      const userRef = doc(db, 'users', app.user_id);
+      await updateDoc(userRef, { 
+        role: 'teacher',
+        subject: (app.subject || 'general').toLowerCase(),
+        teacherStatus: 'active'
+      });
+      
       setApplications(prev => prev.map(a => a.id === app.id ? { ...a, status: 'approved' } : a));
       alert('Учитель успешно одобрен!');
     } catch (err) {
@@ -82,7 +93,7 @@ export default function AdminDashboard() {
 
   const handleReject = async (appId: string) => {
     try {
-      await api.put(`/admin/applications/${appId}`, { status: 'rejected' });
+      await updateDoc(doc(db, 'teacher_applications', appId), { status: 'rejected' });
       setApplications(prev => prev.map(a => a.id === appId ? { ...a, status: 'rejected' } : a));
     } catch (err) {
       console.error('Error rejecting teacher:', err);
@@ -91,8 +102,9 @@ export default function AdminDashboard() {
 
   const handleUpdateTeacherSubject = async (teacherId: string, newSubject: string) => {
     try {
-      // Stub to notify an upgrade
-      alert('Внимание: Обновление предмета пока требует перехода на отдельный API-эндпоинт!');
+      await updateDoc(doc(db, 'users', teacherId), { subject: newSubject });
+      setTeachers(prev => prev.map(t => t.id === teacherId ? { ...t, subject: newSubject } : t));
+      alert('Предмет успешно обновлен!');
     } catch (err) {
       console.error('Error updating subject:', err);
       alert('Ошибка при обновлении предмета');
@@ -102,7 +114,7 @@ export default function AdminDashboard() {
   const handleUpdateRole = async (userId: string, newRole: string) => {
     if (!window.confirm("Вы уверены, что хотите изменить роль этого пользователя?")) return;
     try {
-      await api.put(`/admin/users/${userId}/role`, { role: newRole });
+      await updateDoc(doc(db, 'users', userId), { role: newRole });
       alert('Роль успешно обновлена!');
       fetchData(); // re-fetch to move user to correct list
     } catch (err) {
@@ -113,8 +125,33 @@ export default function AdminDashboard() {
 
   const handleGrantSubscription = async (studentId: string, plan: string) => {
     try {
-      const mappedPlan = plan === 'yearly' ? 'premium' : 'basic';
-      await api.post(`/admin/users/${studentId}/subscription`, { plan: mappedPlan });
+      const subRef = doc(db, 'users', studentId, 'subscription', 'current');
+      const endDate = new Date();
+      if (plan === 'yearly') {
+        endDate.setFullYear(endDate.getFullYear() + 1);
+      } else {
+        endDate.setMonth(endDate.getMonth() + 1);
+      }
+
+      await updateDoc(doc(db, 'users', studentId), { has_video_access: true });
+      try {
+        await updateDoc(subRef, {
+          plan,
+          start_date: new Date().toISOString(),
+          end_date: endDate.toISOString(),
+          exams_left: plan === 'yearly' ? 50 : 5,
+          has_video_access: true
+        });
+      } catch (e) {
+        await setDoc(subRef, {
+          plan,
+          start_date: new Date().toISOString(),
+          end_date: endDate.toISOString(),
+          exams_left: plan === 'yearly' ? 50 : 5,
+          has_video_access: true
+        });
+      }
+
       alert(`Подписка "${plan}" успешно выдана!`);
       fetchData();
     } catch (err) {
@@ -442,6 +479,27 @@ export default function AdminDashboard() {
                     </a>
                   )}
                   
+                  {app.phone && (
+                    <div className="flex items-center gap-2 ml-4">
+                      <a 
+                        href={`https://wa.me/${app.phone.replace(/\D/g, '')}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-2 title-tooltip"
+                        title="Написать в WhatsApp"
+                      >
+                        <MessageCircle size={14} />
+                      </a>
+                      <a 
+                        href={`tel:${app.phone.replace(/\D/g, '')}`} 
+                        className="px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-2 title-tooltip"
+                        title="Позвонить"
+                      >
+                        <Phone size={14} />
+                      </a>
+                    </div>
+                  )}
+
                   <div className="flex gap-2 ml-auto w-full md:w-auto mt-4 md:mt-0">
                     <button 
                       onClick={() => handleReject(app.id)}

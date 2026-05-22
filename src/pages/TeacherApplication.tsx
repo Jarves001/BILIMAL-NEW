@@ -29,8 +29,8 @@ export default function TeacherApplication() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 700 * 1024) {
-      alert('Файл слишком большой. Максимальный размер 700 КБ.');
+    if (file.size > 250 * 1024) {
+      alert('Файл слишком большой. Максимальный размер 250 КБ.');
       return;
     }
 
@@ -213,7 +213,7 @@ export default function TeacherApplication() {
           </div>
 
           <div className="pt-6 border-t border-slate-100">
-            <h3 className="font-black text-primary mb-4">Документы (по желанию, макс. 700КБ каждый)</h3>
+            <h3 className="font-black text-primary mb-4">Документы (по желанию, макс. 250КБ каждый)</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               
               <div className="relative group cursor-pointer bg-slate-50 rounded-xl p-4 border-2 border-dashed border-slate-200 hover:border-accent hover:bg-white transition-all text-center">
