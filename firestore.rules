@@ -45,8 +45,7 @@ service cloud.firestore {
     }
 
     function isValidTeacherApplication(data) {
-       return data.keys().hasAll(['user_id', 'name', 'education', 'experience', 'phone', 'subject', 'status', 'applied_at'])
-          && data.keys().size() == 8
+       return data.keys().hasAll(['user_id', 'name', 'experience', 'phone', 'subject', 'status', 'applied_at'])
           && data.user_id == request.auth.uid
           && data.status == 'pending';
     }
