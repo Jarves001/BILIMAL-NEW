@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, addDoc, getDoc } from 'firebase/firestore';
-import { Users, Video, Calendar, CheckSquare, XSquare, ShieldCheck, Mail } from 'lucide-react';
+import { Users, Video, Calendar, CheckSquare, XSquare, ShieldCheck, Mail, PlayCircle, UserPlus, PhoneIncoming } from 'lucide-react';
+import api from '../api/client';
 
 export default function ModeratorDashboard() {
   const { user } = useAuth();
@@ -11,6 +12,12 @@ export default function ModeratorDashboard() {
   const [groups, setGroups] = useState<any[]>([]);
   const [newGroupName, setNewGroupName] = useState('');
   const [selectedCurator, setSelectedCurator] = useState<string>('');
+  
+  const [consultations, setConsultations] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [selectedCourseForLessons, setSelectedCourseForLessons] = useState<string | null>(null);
+  const [lessons, setLessons] = useState<any[]>([]);
+  const [userToCurator, setUserToCurator] = useState<string>('');
 
   useEffect(() => {
     fetchData();
@@ -30,6 +37,15 @@ export default function ModeratorDashboard() {
       // 3. Fetch groups
       const groupsSnap = await getDocs(collection(db, 'groups'));
       setGroups(groupsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+
+      // 4. Fetch pending consultations
+      const consQuery = query(collection(db, 'consultation_requests'), where('status', '==', 'pending'));
+      const consSnap = await getDocs(consQuery);
+      setConsultations(consSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+
+      // 5. Fetch courses
+      const coursesSnap = await getDocs(collection(db, 'courses'));
+      setCourses(coursesSnap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (err) {
       console.error('Moderator fetch error:', err);
     }
@@ -97,22 +113,108 @@ export default function ModeratorDashboard() {
     }
   };
 
+  const handleMakeCurator = async () => {
+    if (!userToCurator) return alert('Выберите пользователя');
+    if (!window.confirm("Назначить этого пользователя куратором?")) return;
+    try {
+      await api.put(`/admin/users/${userToCurator}/role`, { role: 'curator' });
+      alert('Пользователь успешно назначен куратором!');
+      setUserToCurator('');
+      fetchData(); // re-fetch to update roles
+    } catch (err: any) {
+      alert('Ошибка при обновлении роли: ' + (err?.response?.data?.error || err.message));
+    }
+  };
+
+  const handleAcceptConsultation = async (id: string, phone: string) => {
+    try {
+      await updateDoc(doc(db, 'consultation_requests', id), { status: 'accepted', handledBy: user?.id, handledAt: new Date() });
+      alert(`Консультация принята! Свяжитесь по номеру: ${phone}`);
+      fetchData();
+    } catch (err: any) {
+      alert('Ошибка: ' + err.message);
+    }
+  };
+
+  const loadCourseLessons = async (courseId: string) => {
+    if (selectedCourseForLessons === courseId) {
+       setSelectedCourseForLessons(null);
+       setLessons([]);
+       return;
+    }
+    try {
+      const snap = await getDocs(query(collection(db, `courses/${courseId}/lessons`)));
+      setLessons(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setSelectedCourseForLessons(courseId);
+    } catch (err) {
+       console.error(err);
+    }
+  };
+
   const curators = usersList.filter(u => u.role === 'curator');
+  const potentialCurators = usersList.filter(u => u.role !== 'curator' && u.role !== 'admin' && u.role !== 'moderator');
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-primary uppercase">Панель Модератора</h1>
-          <p className="text-sm text-slate-500 mt-2">Управление заявками и распределение студентов</p>
+          <p className="text-sm text-slate-500 mt-2">Управление заявками, проверка контента и распределение ролей</p>
         </div>
-        <button onClick={autoGenerateGroups} className="px-6 py-3 bg-accent text-primary font-black uppercase text-xs tracking-widest shadow-sm hover:scale-105 transition-all">
-          Сгенерировать группы (Авто)
-        </button>
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* Консультации */}
+        <section className="bg-white border shadow-sm p-6">
+          <div className="flex items-center gap-2 mb-4 border-b pb-2">
+            <PhoneIncoming className="text-primary" size={20} />
+            <h2 className="text-sm font-bold uppercase tracking-widest text-primary">Заявки на Консультацию</h2>
+          </div>
+          <div className="space-y-4">
+            {consultations.length === 0 && <div className="text-xs text-slate-400 font-bold uppercase py-4">Нет новых заявок</div>}
+            {consultations.map(c => (
+              <div key={c.id} className="bg-slate-50 border p-4 flex justify-between items-center">
+                 <div>
+                   <p className="text-xs font-bold text-primary mb-1">Номер: {c.phone}</p>
+                   <p className="text-[10px] text-slate-500">Дата: {c.created_at?.toDate ? c.created_at.toDate().toLocaleString() : 'Неизвестно'}</p>
+                 </div>
+                 <button onClick={() => handleAcceptConsultation(c.id, c.phone)} className="bg-emerald-500 text-white px-4 py-2 text-[10px] font-black uppercase hover:bg-emerald-600 transition">
+                   Принять в работу
+                 </button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Назначение Кураторов */}
+        <section className="bg-white border shadow-sm p-6">
+          <div className="flex items-center gap-2 mb-4 border-b pb-2">
+            <UserPlus className="text-accent" size={20} />
+            <h2 className="text-sm font-bold uppercase tracking-widest text-primary">Назначить Куратора</h2>
+          </div>
+          <div className="flex flex-col gap-4">
+            <label className="text-[10px] font-bold text-slate-400 uppercase">Выберите пользователя для назначения куратором</label>
+            <select value={userToCurator} onChange={e => setUserToCurator(e.target.value)} className="w-full bg-slate-50 border-2 border-slate-200 focus:border-accent p-3 text-sm outline-none">
+               <option value="">-- Выбрать пользователя --</option>
+               {potentialCurators.map(u => (
+                  <option key={u.id} value={u.id}>{u.name || 'Без Имени'} ({u.email}) - {u.role || 'Ученик'}</option>
+               ))}
+            </select>
+            <button onClick={handleMakeCurator} className="bg-accent text-primary font-black uppercase text-xs py-3 hover:opacity-90">
+               Дать Звание "Куратор"
+            </button>
+          </div>
+        </section>
+
+      </div>
+
+      {/* Анкеты Учителей */}
       <section>
-        <h2 className="text-sm font-bold uppercase tracking-widest text-primary mb-4 border-b pb-2">Анкеты учителей (Ожидают проверки модератором)</h2>
+        <div className="flex items-center gap-2 mb-4 border-b pb-2">
+          <ShieldCheck className="text-primary" size={20} />
+          <h2 className="text-sm font-bold uppercase tracking-widest text-primary">Анкеты учителей (Ожидают проверки)</h2>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {apps.map(app => (
             <div key={app.id} className="bg-white border p-6 shadow-sm">
@@ -127,7 +229,7 @@ export default function ModeratorDashboard() {
 
               <div className="flex gap-2">
                 <button onClick={() => handleApproveApp(app.id, app.email)} className="flex-1 bg-primary text-white py-2 text-xs font-bold uppercase tracking-wider hover:bg-primary/90 flex justify-center items-center gap-2">
-                  <CheckSquare size={14}/> В Админ
+                  <CheckSquare size={14}/> К Админу
                 </button>
                 <button onClick={() => handleRejectApp(app.id)} className="flex-1 bg-red-50 text-red-600 py-2 text-xs font-bold uppercase tracking-wider hover:bg-red-100 flex justify-center items-center gap-2">
                   <XSquare size={14}/> Отклон.
@@ -143,8 +245,74 @@ export default function ModeratorDashboard() {
         </div>
       </section>
 
+      {/* Проверка Видеоуроков */}
       <section>
-        <h2 className="text-sm font-bold uppercase tracking-widest text-primary mb-4 border-b pb-2">Управление Группами</h2>
+        <div className="flex items-center gap-2 mb-4 border-b pb-2">
+          <PlayCircle className="text-emerald-500" size={20} />
+          <h2 className="text-sm font-bold uppercase tracking-widest text-primary">Проверка Видео Уроков</h2>
+        </div>
+        <div className="bg-white border shadow-sm p-4">
+           {courses.length === 0 ? <p className="text-xs text-slate-400 uppercase font-bold py-4 text-center">Нет загруженных курсов</p> : (
+             <div className="space-y-4">
+               {courses.map(course => (
+                 <div key={course.id} className="border border-slate-200">
+                    <div 
+                      className="bg-slate-50 p-4 flex justify-between items-center cursor-pointer hover:bg-slate-100"
+                      onClick={() => loadCourseLessons(course.id)}
+                    >
+                       <div>
+                         <h3 className="font-bold text-primary uppercase">{course.title}</h3>
+                         <p className="text-xs text-slate-500">Id: {course.id} | Предмет: {course.subject}</p>
+                       </div>
+                       <div className="text-xs font-bold text-primary px-3 py-1 bg-white border uppercase">
+                          {selectedCourseForLessons === course.id ? 'Скрыть уроки' : 'Проверить уроки'}
+                       </div>
+                    </div>
+                    
+                    {selectedCourseForLessons === course.id && (
+                       <div className="p-4 bg-white border-t space-y-4">
+                          {lessons.length === 0 && <p className="text-[10px] uppercase font-bold text-slate-400 py-2">В этом курсе еще нет уроков.</p>}
+                          {lessons.map(lesson => (
+                              <div key={lesson.id} className="border p-3 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+                                 <div>
+                                    <h4 className="font-bold text-sm text-primary mb-1">{lesson.title}</h4>
+                                    <p className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 inline-block rounded">
+                                      Видео ссылка: {lesson.video_url || 'Отсутствует'}
+                                    </p>
+                                 </div>
+                                 <div className="flex gap-2">
+                                     {lesson.video_url && (
+                                       <a href={lesson.video_url} target="_blank" rel="noopener noreferrer" className="px-4 py-2 border border-slate-300 text-[10px] font-black uppercase hover:bg-slate-50 text-slate-700">
+                                         Смотреть
+                                       </a>
+                                     )}
+                                     <button className="px-4 py-2 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase hover:bg-emerald-100">
+                                       Проверено (ОК)
+                                     </button>
+                                 </div>
+                              </div>
+                          ))}
+                       </div>
+                    )}
+                 </div>
+               ))}
+             </div>
+           )}
+        </div>
+      </section>
+
+      {/* Управление Группами */}
+      <section>
+        <div className="flex items-center justify-between gap-2 border-b pb-2 mb-4">
+          <div className="flex items-center gap-2">
+            <Users className="text-blue-500" size={20} />
+            <h2 className="text-sm font-bold uppercase tracking-widest text-primary">Управление Группами</h2>
+          </div>
+          <button onClick={autoGenerateGroups} className="px-4 py-1.5 bg-slate-100 text-primary font-black uppercase text-[10px] hover:bg-slate-200 transition-all border border-slate-200">
+            Сгенерировать (Авто)
+          </button>
+        </div>
+        
         <div className="bg-white border p-6 shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-end">
            <div className="flex-1">
              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Название Группы</label>
@@ -158,7 +326,7 @@ export default function ModeratorDashboard() {
              </select>
            </div>
            <button onClick={createGroup} className="py-3 px-6 bg-primary text-white text-xs font-bold uppercase tracking-wider hover:bg-primary/90">
-             Создать
+             Создать Группу
            </button>
         </div>
 
@@ -166,6 +334,7 @@ export default function ModeratorDashboard() {
           {groups.map(group => (
             <div key={group.id} className="bg-white border p-6 shadow-sm">
                <h3 className="font-bold text-primary mb-2 uppercase">{group.name}</h3>
+               <p className="text-xs text-slate-500 mb-2">Куратор: {curators.find(c => c.id === group.curator_id)?.name || 'Не назначен'}</p>
                <p className="text-xs text-slate-500 mb-4">Студентов: {group.students?.length || 0}</p>
                
                <div className="mb-4">
@@ -188,7 +357,7 @@ export default function ModeratorDashboard() {
                  />
                </div>
 
-               <button className="w-full border border-primary text-primary py-2 text-xs font-bold uppercase hover:bg-slate-50">
+               <button className="w-full border border-primary text-primary py-2 text-xs font-bold uppercase hover:bg-slate-50 mt-auto">
                  Редактировать состав
                </button>
             </div>
