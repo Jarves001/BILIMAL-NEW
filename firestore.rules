@@ -162,6 +162,11 @@ service cloud.firestore {
       allow create, update, delete: if isModerator();
     }
 
+    match /consultation_requests/{requestId} {
+      allow create: if true;
+      allow read, update, delete: if isSignedIn() && (isModerator() || isCurator() || isAdmin());
+    }
+
     match /teacher_applications/{applicationId} {
       allow get: if isSignedIn() && (resource.data.user_id == request.auth.uid || isModerator());
       allow list: if isSignedIn() && (resource.data.user_id == request.auth.uid || isModerator());

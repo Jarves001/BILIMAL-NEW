@@ -64,6 +64,16 @@ export default function Sidebar() {
           </Link>
         )}
 
+        {(user?.role === 'admin' || user?.role === 'moderator') && (
+          <Link
+            to="/moderator"
+            className={`sidebar-link ${isActive('/moderator') ? 'sidebar-link-active' : 'sidebar-link-inactive'}`}
+          >
+            <Shield size={18} />
+            <span>Модерация</span>
+          </Link>
+        )}
+
         {user?.role === 'teacher' && (
           <Link
             to="/teacher"
