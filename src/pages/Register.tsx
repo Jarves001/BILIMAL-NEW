@@ -56,7 +56,7 @@ export default function Register() {
           </div>
 
           {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm text-center font-medium border border-red-100">
+            <div className="bg-red-50 text-red-600 p-3 rounded-none mb-6 text-sm text-center font-medium border border-red-100">
               {error}
             </div>
           )}
@@ -70,7 +70,7 @@ export default function Register() {
                   type="text"
                   required
                   placeholder="Иван Иванов"
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-none focus:ring-2 focus:ring-primary outline-none transition-all"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
@@ -85,7 +85,7 @@ export default function Register() {
                   type="email"
                   required
                   placeholder="example@mail.com"
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-none focus:ring-2 focus:ring-primary outline-none transition-all"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -100,7 +100,7 @@ export default function Register() {
                   type="password"
                   required
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-none focus:ring-2 focus:ring-primary outline-none transition-all"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -117,7 +117,7 @@ export default function Register() {
             <button 
               type="submit" 
               disabled={isLoading}
-              className="w-full btn-primary bg-primary py-4 font-bold rounded-xl flex items-center justify-center gap-2 hover:shadow-lg active:scale-95 transition-all disabled:opacity-50"
+              className="w-full btn-primary bg-primary py-4 font-bold rounded-none flex items-center justify-center gap-2 hover:shadow-lg active:scale-95 transition-all disabled:opacity-50"
             >
               {isLoading ? 'Создание аккаунта...' : 'Зарегистрироваться'}
             </button>

@@ -29,13 +29,13 @@ function MathKeyboard({ onInput, onDelete }: { onInput: (v: string) => void, onD
   ];
 
   return (
-    <div className="bg-slate-100 p-4 rounded-3xl grid grid-cols-4 gap-3 shadow-inner max-w-md mx-auto border-4 border-white">
+    <div className="bg-slate-100 p-4 rounded-none grid grid-cols-4 gap-3 shadow-inner max-w-md mx-auto border-4 border-white">
       {keys.flat().map(key => (
         <button
           key={key}
           type="button"
           onClick={() => onInput(key)}
-          className="h-14 bg-white rounded-2xl shadow-sm active:shadow-none active:translate-y-0.5 transition-all font-black text-xl text-primary hover:bg-slate-50 flex items-center justify-center border-b-4 border-slate-200"
+          className="h-14 bg-white rounded-none shadow-sm active:shadow-none active:translate-y-0.5 transition-all font-black text-xl text-primary hover:bg-slate-50 flex items-center justify-center border-b-4 border-slate-200"
         >
           {key}
         </button>
@@ -43,14 +43,14 @@ function MathKeyboard({ onInput, onDelete }: { onInput: (v: string) => void, onD
       <button
         type="button"
         onClick={onDelete}
-        className="h-14 bg-red-50 text-red-500 rounded-2xl shadow-sm font-black text-xl hover:bg-red-100 col-span-2 border-b-4 border-red-200"
+        className="h-14 bg-red-50 text-red-500 rounded-none shadow-sm font-black text-xl hover:bg-red-100 col-span-2 border-b-4 border-red-200"
       >
         ⌫
       </button>
       <button
         type="button"
         onClick={() => onInput(' ')}
-        className="h-14 bg-slate-200 text-slate-500 rounded-2xl shadow-sm font-black text-[10px] uppercase tracking-widest col-span-2 border-b-4 border-slate-300"
+        className="h-14 bg-slate-200 text-slate-500 rounded-none shadow-sm font-black text-[10px] uppercase tracking-widest col-span-2 border-b-4 border-slate-300"
       >
         Пробел
       </button>
@@ -199,7 +199,7 @@ export default function TestView() {
               <div key={task.id} className={`card ${answers[task.id] === task.correct_answer ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
                 <div className="flex gap-4">
                   {task.image_url && (
-                    <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 border border-white/50 shadow-sm">
+                    <div className="w-20 h-20 rounded-none overflow-hidden shrink-0 border border-white/50 shadow-sm">
                       <img src={task.image_url} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     </div>
                   )}
@@ -219,7 +219,7 @@ export default function TestView() {
                   </div>
                 </div>
                 {task.explanation && (
-                  <div className="text-xs text-gray-600 mt-3 italic px-4 py-3 bg-white/50 rounded-xl border border-white/30">{task.explanation}</div>
+                  <div className="text-xs text-gray-600 mt-3 italic px-4 py-3 bg-white/50 rounded-none border border-white/30">{task.explanation}</div>
                 )}
               </div>
             ))}
@@ -258,7 +258,7 @@ export default function TestView() {
           className="card shadow-xl px-1 p-12 bg-white min-h-[400px] flex flex-col sm:px-12"
         >
           {currentTask.image_url && (
-            <div className="mb-8 rounded-3xl overflow-hidden border-8 border-slate-50 shadow-inner max-w-2xl mx-auto w-full">
+            <div className="mb-8 rounded-none overflow-hidden border-8 border-slate-50 shadow-inner max-w-2xl mx-auto w-full">
               <img 
                 src={currentTask.image_url} 
                 alt="Question data" 
@@ -291,7 +291,7 @@ export default function TestView() {
                   <input 
                     readOnly
                     placeholder="Байланысу..."
-                    className="w-full text-center text-3xl font-black p-6 bg-slate-50 border-4 border-slate-100 rounded-3xl outline-none text-primary placeholder:text-slate-200"
+                    className="w-full text-center text-3xl font-black p-6 bg-slate-50 border-4 border-slate-100 rounded-none outline-none text-primary placeholder:text-slate-200"
                     value={selectedAnswer || ''}
                   />
                 </div>
@@ -319,13 +319,13 @@ export default function TestView() {
                           : [...currentSelected, opt.key].sort();
                         setSelectedAnswer(next.length > 0 ? next.join(',') : null);
                       }}
-                      className={`flex items-center p-5 rounded-lg border-2 text-left transition-all group ${
+                      className={`flex items-center p-5 rounded-none border-2 text-left transition-all group ${
                         isSelected 
                           ? 'border-accent bg-accent/5 ring-1 ring-accent' 
                           : 'border-gray-100 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                     >
-                      <div className={`w-10 h-10 rounded-md flex items-center justify-center font-bold mr-4 shrink-0 transition-colors ${
+                      <div className={`w-10 h-10 rounded-none flex items-center justify-center font-bold mr-4 shrink-0 transition-colors ${
                         isSelected ? 'bg-accent text-primary' : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'
                       }`}>
                          <div className={`w-5 h-5 border-2 rounded ${isSelected ? 'bg-primary border-primary flex items-center justify-center' : 'border-slate-300'}`}>
@@ -350,13 +350,13 @@ export default function TestView() {
                   <button
                     key={opt.key}
                     onClick={() => setSelectedAnswer(opt.key)}
-                    className={`flex items-center p-5 rounded-lg border-2 text-left transition-all group ${
+                    className={`flex items-center p-5 rounded-none border-2 text-left transition-all group ${
                       selectedAnswer === opt.key 
                         ? 'border-accent bg-accent/5 ring-1 ring-accent' 
                         : 'border-gray-100 hover:border-gray-300 hover:bg-gray-50'
                     }`}
                   >
-                    <span className={`w-10 h-10 rounded-md flex items-center justify-center font-bold mr-4 shrink-0 transition-colors ${
+                    <span className={`w-10 h-10 rounded-none flex items-center justify-center font-bold mr-4 shrink-0 transition-colors ${
                       selectedAnswer === opt.key ? 'bg-accent text-primary' : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'
                     }`}>
                       {opt.key}

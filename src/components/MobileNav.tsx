@@ -10,6 +10,9 @@ export default function MobileNav() {
     { path: '/', icon: <Home size={24} />, label: 'Главная' },
     { path: '/dashboard', icon: <BookOpen size={24} />, label: 'Портал' },
     ...(user?.role !== 'teacher' ? [{ path: '/subscriptions', icon: <CreditCard size={24} />, label: 'Тарифы' }] : []),
+    ...(user?.role === 'admin' ? [{ path: '/admin', icon: <User size={24} />, label: 'Админ' }] : []),
+    ...(user?.role === 'moderator' ? [{ path: '/moderator', icon: <User size={24} />, label: 'Модератор' }] : []),
+    ...(user?.role === 'curator' ? [{ path: '/curator', icon: <User size={24} />, label: 'Куратор' }] : []),
     { path: '/profile', icon: <User size={24} />, label: 'Профиль' },
   ];
 
@@ -23,7 +26,7 @@ export default function MobileNav() {
             to={item.path}
             className={`flex flex-col items-center gap-1 transition-all duration-300 ${isActive ? 'text-primary' : 'text-slate-400 hover:text-slate-500'}`}
           >
-            <div className={`p-2 rounded-xl transition-colors ${isActive ? 'bg-primary/5' : ''}`}>
+            <div className={`p-2 rounded-none transition-colors ${isActive ? 'bg-primary/5' : ''}`}>
               {item.icon}
             </div>
             <span className={`text-[10px] font-bold uppercase tracking-tighter transition-all ${isActive ? 'opacity-100 translate-y-0' : 'opacity-60 -translate-y-1'}`}>

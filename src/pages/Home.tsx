@@ -19,7 +19,7 @@ export default function Home() {
         <div className="absolute inset-0 opacity-10">
           <div className="grid grid-cols-12 gap-4 h-full transform -rotate-12 scale-150">
             {Array.from({ length: 48 }).map((_, i) => (
-              <div key={i} className="border border-white h-32 rounded-lg" />
+              <div key={i} className="border border-white h-32 rounded-none" />
             ))}
           </div>
         </div>

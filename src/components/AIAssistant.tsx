@@ -83,10 +83,10 @@ export default function AIAssistant() {
   return (
     <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end">
       {isOpen ? (
-        <div className="bg-white border text-base border-slate-200 rounded-2xl shadow-2xl w-[360px] sm:w-[400px] h-[500px] flex flex-col overflow-hidden mb-4 transition-all duration-300 transform origin-bottom-right">
+        <div className="bg-white border text-base border-slate-200 rounded-none shadow-2xl w-[360px] sm:w-[400px] h-[500px] flex flex-col overflow-hidden mb-4 transition-all duration-300 transform origin-bottom-right">
           <div className="bg-indigo-600 p-4 text-white flex justify-between items-center shadow-md">
             <div className="flex items-center gap-3">
-              <div className="bg-white/20 p-2 rounded-lg">
+              <div className="bg-white/20 p-2 rounded-none">
                 <Sparkles size={20} className="text-white" />
               </div>
               <div className="text-left">
@@ -96,7 +96,7 @@ export default function AIAssistant() {
             </div>
             <button 
               onClick={() => setIsOpen(false)}
-              className="p-1.5 hover:bg-white/20 rounded-md transition-colors"
+              className="p-1.5 hover:bg-white/20 rounded-none transition-colors"
             >
               <X size={20} />
             </button>
@@ -115,7 +115,7 @@ export default function AIAssistant() {
               messages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div 
-                    className={`max-w-[85%] p-3 rounded-2xl ${
+                    className={`max-w-[85%] p-3 rounded-none ${
                       msg.role === 'user' 
                         ? 'bg-indigo-600 text-white rounded-tr-sm' 
                         : 'bg-white border border-slate-200 text-slate-800 rounded-tl-sm shadow-sm'
@@ -135,7 +135,7 @@ export default function AIAssistant() {
             
             {isTyping && (
               <div className="flex justify-start">
-                <div className="bg-white border border-slate-200 p-4 rounded-2xl rounded-tl-sm shadow-sm flex gap-1 items-center h-[44px]">
+                <div className="bg-white border border-slate-200 p-4 rounded-none rounded-tl-sm shadow-sm flex gap-1 items-center h-[44px]">
                   <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></span>
                   <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
                   <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
@@ -153,12 +153,12 @@ export default function AIAssistant() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Задай вопрос ИИ..."
-                className="w-full pl-4 pr-12 py-3 text-sm bg-slate-100 border-transparent rounded-full focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
+                className="w-full pl-4 pr-12 py-3 text-sm bg-slate-100 border-transparent rounded-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
               />
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isTyping}
-                className="absolute right-2 p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="absolute right-2 p-2 bg-indigo-600 text-white rounded-none hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <Send size={16} />
               </button>
@@ -168,7 +168,7 @@ export default function AIAssistant() {
       ) : (
         <button
           onClick={() => setIsOpen(true)}
-          className="bg-indigo-600 text-white p-4 rounded-full shadow-lg hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-2 group"
+          className="bg-indigo-600 text-white p-4 rounded-none shadow-lg hover:bg-indigo-700 hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-2 group"
         >
           <Sparkles size={24} className="group-hover:animate-pulse" />
           <span className="font-semibold hidden group-hover:block whitespace-nowrap overflow-hidden transition-all px-1 origin-left">BILIMAL AI</span>

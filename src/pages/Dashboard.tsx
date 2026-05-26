@@ -4,7 +4,7 @@ import api from '../api/client';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, limit, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
-import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX, Trophy, Target, MessageSquare, AlertCircle, CheckCircle, X, Send, Play, Book, BookMarked, Timer, Lock } from 'lucide-react';
+import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX, Trophy, Target, MessageSquare, AlertCircle, CheckCircle, X, Send, Play, Book, BookMarked, Timer, Lock, Calendar, Video } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSubjectLabel, SUBJECTS } from '../constants';
 
@@ -29,6 +29,7 @@ export default function Dashboard() {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMsg, setNewMsg] = useState('');
   const [application, setApplication] = useState<any>(null);
+  const [myGroup, setMyGroup] = useState<any>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -144,10 +145,24 @@ export default function Dashboard() {
       }
     }
 
+    async function fetchGroup() {
+      if (user?.role === 'teacher' || user?.role === 'admin') return;
+      try {
+        const q = query(collection(db, 'groups'), where('students', 'array-contains', user?.id));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          setMyGroup({ id: snap.docs[0].id, ...snap.docs[0].data() });
+        }
+      } catch (err) {
+        console.error('Failed to fetch group:', err);
+      }
+    }
+
     fetchStats();
     fetchApplication();
+    fetchGroup();
     
-    // Fetch courses from Firestore directly for better reliability (fixes permission denial in server-side admin SDK)
+    // Fetch courses from Firestore directly for better reliability
     const fetchCourses = async () => {
       try {
         const coursesSnap = await getDocs(collection(db, 'courses'));
@@ -155,11 +170,6 @@ export default function Dashboard() {
         setCourses(coursesData);
       } catch (err) {
         console.error('Failed to fetch courses from firestore:', err);
-        // Fallback to API if firestore fails for some reason
-        api.get('/courses').then(res => {
-          const rawCourses = Array.isArray(res.data) ? res.data : [];
-          setCourses(rawCourses);
-        }).catch(apiErr => console.error('API fetch also failed:', apiErr));
       }
     };
 
@@ -205,10 +215,10 @@ export default function Dashboard() {
     <div className="space-y-6 pb-20 md:pb-0">
       {/* Application Status */}
       {application && application.status !== 'rejected' && (
-        <div className={`p-6 rounded-3xl border flex items-center gap-4 ${
+        <div className={`p-6 rounded-none border flex items-center gap-4 ${
           application.status === 'pending' ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'
         }`}>
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+          <div className={`w-12 h-12 rounded-none flex items-center justify-center ${
             application.status === 'pending' ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'
           }`}>
             {application.status === 'pending' ? <Clock size={24} /> : <CheckCircle size={24} />}
@@ -230,7 +240,7 @@ export default function Dashboard() {
           {application.status === 'approved' && user?.role !== 'teacher' && (
              <button 
                onClick={() => window.location.reload()}
-               className="bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest"
+               className="bg-green-600 text-white px-4 py-2 rounded-none text-[10px] font-bold uppercase tracking-widest"
              >
                Обновить роль
              </button>
@@ -239,7 +249,7 @@ export default function Dashboard() {
       )}
 
       {/* Level Header (Mobile Focused) */}
-      <div className="md:hidden bg-primary text-white p-6 rounded-3xl mb-4 relative overflow-hidden">
+      <div className="md:hidden bg-primary text-white p-6 rounded-none mb-4 relative overflow-hidden">
         <div className="relative z-10">
           <p className="text-[10px] font-bold text-accent uppercase tracking-widest">Уровень {Math.floor(userStats.totalScore / 100) + 1}</p>
           <h2 className="text-2xl font-black">{user?.name}</h2>
@@ -255,14 +265,14 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className={`grid grid-cols-2 ${user?.role === 'teacher' ? 'md:grid-cols-2' : 'md:grid-cols-4'} gap-4`}>
-        <div className="bg-white border p-4 shadow-sm rounded-2xl md:rounded-none">
+        <div className="bg-white border p-4 shadow-sm rounded-none md:rounded-none">
           <p className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Готовность к НИШ/БИЛ</p>
           <p className="text-2xl font-black text-primary mt-1">{userStats.readiness}%</p>
           <div className="w-full bg-slate-100 h-1 mt-2 rounded-full overflow-hidden">
             <div className="bg-emerald-500 h-full" style={{ width: `${userStats.readiness}%` }}></div>
           </div>
         </div>
-        <div className="bg-white border p-4 shadow-sm rounded-2xl md:rounded-none">
+        <div className="bg-white border p-4 shadow-sm rounded-none md:rounded-none">
           <p className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Уроков пройдено</p>
           <p className="text-2xl font-black text-primary mt-1">{userStats.lessonsCompleted}</p>
           <p className="text-[10px] text-green-600 font-bold mt-2 flex items-center gap-1">
@@ -293,6 +303,54 @@ export default function Dashboard() {
         )}
       </div>
 
+      {/* Schedule Banner */}
+      {user?.role !== 'teacher' && (
+      <div className="bg-white border shadow-sm">
+        <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+          <h3 className="text-sm font-bold uppercase tracking-tight text-primary flex items-center gap-2">
+            <Calendar size={16} className="text-accent" />
+            Академическое расписание {myGroup ? `(Группа: ${myGroup.name})` : ''}
+          </h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x">
+          <div className="p-4 bg-white hover:bg-slate-50 transition-colors flex flex-col justify-between">
+            <div>
+              <p className="text-[10px] uppercase text-slate-400 font-bold tracking-widest mb-1">Онлайн-Сессии</p>
+              <h4 className="font-bold text-primary flex items-center gap-2 mt-2">
+                 <Video size={16} className="text-blue-500" />
+                 Живые уроки в Zoom
+              </h4>
+              <p className="text-xs text-slate-500 mt-2">Интерактивные занятия с преподавателями. Ссылки на подключения отправляются модератором и учителями напрямую в Чат.</p>
+            </div>
+            {myGroup?.schedule_text && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                 <p className="text-[10px] uppercase text-blue-500 font-bold tracking-widest mb-1">Ваше расписание</p>
+                 <p className="text-xs font-medium text-blue-900">{myGroup.schedule_text}</p>
+              </div>
+            )}
+          </div>
+          <div className="p-4 bg-white hover:bg-slate-50 transition-colors">
+            <p className="text-[10px] uppercase text-slate-400 font-bold tracking-widest mb-1">Постоянно</p>
+            <h4 className="font-bold text-primary flex items-center gap-2 mt-2">
+               <BookOpen size={16} className="text-emerald-500" />
+               Видеоуроки и Задания
+            </h4>
+            <p className="text-xs text-slate-500 mt-2">Самостоятельная практика, видео-материалы и выполнение тестов на платформе.</p>
+             <button onClick={() => document.getElementById('courses')?.scrollIntoView({ behavior: 'smooth' })} className="mt-4 px-4 py-2 bg-emerald-50 rounded-lg text-emerald-700 hover:bg-emerald-100 text-[10px] font-bold uppercase w-full">Перейти к курсам</button>
+          </div>
+          <div className="p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors">
+            <p className="text-[10px] uppercase text-slate-400 font-bold tracking-widest mb-1">Каждую неделю</p>
+            <h4 className="font-bold text-primary flex items-center gap-2 mt-2">
+               <Target size={16} className="text-accent" />
+               Аттестация и Экзамен
+            </h4>
+            <p className="text-xs text-slate-500 mt-2">Еженедельный срез знаний. Анализ ошибок и подготовка к экзаменам НИШ.</p>
+             <button onClick={() => window.scrollTo(0, 0)} className="mt-4 px-4 py-2 bg-accent rounded-lg text-primary hover:bg-accent/80 text-[10px] font-bold uppercase w-full">Сдать экзамен</button>
+          </div>
+        </div>
+      </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           {/* Main Course Listing */}
@@ -307,14 +365,14 @@ export default function Dashboard() {
               {!isSubscribed && (
                 <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 text-center">
                   <div className="bg-white p-8 rounded-[30px] shadow-2xl border border-slate-100 max-w-sm">
-                    <div className="w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary">
+                    <div className="w-16 h-16 bg-accent/20 rounded-none flex items-center justify-center mx-auto mb-4 text-primary">
                       <Lock size={32} />
                     </div>
                     <h4 className="text-xl font-black text-primary uppercase tracking-tight mb-2">Доступ ограничен</h4>
                     <p className="text-xs text-slate-500 font-medium mb-6">Еженедельные экзамены доступны только пользователям с активной подпиской.</p>
                     <Link 
                       to="/subscriptions" 
-                      className="w-full py-4 bg-accent text-primary font-black uppercase tracking-widest text-xs rounded-2xl block hover:scale-105 transition-all shadow-xl shadow-accent/20"
+                      className="w-full py-4 bg-accent text-primary font-black uppercase tracking-widest text-xs rounded-none block hover:scale-105 transition-all shadow-xl shadow-accent/20"
                     >
                       Активировать подписку
                     </Link>
@@ -337,7 +395,7 @@ export default function Dashboard() {
                   <Link 
                     to={isSubscribed ? `/exam/${exam.id}` : '#'} 
                     onClick={(e) => !isSubscribed && e.preventDefault()}
-                    className={`w-full py-3 ${isSubscribed ? 'bg-accent/10 hover:bg-accent' : 'bg-slate-100 cursor-not-allowed'} text-primary font-black uppercase tracking-widest text-[10px] rounded-xl flex items-center justify-center gap-2 transition-all`}
+                    className={`w-full py-3 ${isSubscribed ? 'bg-accent/10 hover:bg-accent' : 'bg-slate-100 cursor-not-allowed'} text-primary font-black uppercase tracking-widest text-[10px] rounded-none flex items-center justify-center gap-2 transition-all`}
                   >
                     {isSubscribed ? 'Начать экзамен' : 'Недоступно'}
                     <ChevronRight size={14} />
@@ -352,7 +410,7 @@ export default function Dashboard() {
           </div>
 
           {/* Main Course Listing */}
-          <div className="bg-white border shadow-sm">
+          <div id="courses" className="bg-white border shadow-sm">
             <div className="p-4 border-b flex justify-between items-center bg-slate-50">
               <h3 className="text-sm font-bold uppercase tracking-tight text-primary">
                 {subjectFilter ? `Раздел: ${getSubjectTitle()}` : 'Доступные курсы и программы'}
@@ -375,7 +433,7 @@ export default function Dashboard() {
                     <h4 className="font-bold text-lg text-primary leading-tight mb-2">{course.title}</h4>
                     <p className="text-sm text-slate-500 line-clamp-2 mb-4">{course.description}</p>
                     <div className="flex items-center gap-4">
-                      <Link to={`/courses/${course.id}`} className="bg-primary text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/90 transition-all flex items-center gap-2 shadow-lg shadow-primary/10">
+                      <Link to={`/courses/${course.id}`} className="bg-primary text-white px-6 py-2.5 rounded-none text-[10px] font-black uppercase tracking-widest hover:bg-primary/90 transition-all flex items-center gap-2 shadow-lg shadow-primary/10">
                         <Play size={14} className="fill-current" />
                         Смотреть уроки
                       </Link>
@@ -402,36 +460,44 @@ export default function Dashboard() {
               <h3 className="text-sm font-bold uppercase tracking-tight text-primary">Ближайшие цели</h3>
             </div>
             <div className="p-0">
-              <div className="p-4 border-b hover:bg-slate-50">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold px-2 py-0.5 bg-red-100 text-red-700 rounded">СРОЧНО</span>
-                  <span className="text-[10px] text-slate-400 font-mono">12 Май, 14:00</span>
+              {exams.length > 0 ? exams.slice(0, 3).map((exam, idx) => (
+                <Link to={`/exam/${exam.id}`} key={exam.id} className="block p-4 border-b hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    {idx === 0 ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-red-100 text-red-700 rounded-none">СРОЧНО</span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-blue-700 rounded-none">ОБЫЧНО</span>
+                    )}
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {new Date(exam.created_at || Date.now()).toLocaleDateString('ru-RU', { month: 'short', day: 'numeric' })}, {new Date(exam.created_at || Date.now()).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold mt-1 text-primary">{exam.title || 'Экзамен'}</p>
+                  <p className="text-[10px] text-slate-500 uppercase mt-1">{(exam.questions || []).length || exam.questions_count || 0} вопросов | {exam.duration_minutes || 0} мин</p>
+                </Link>
+              )) : (
+                <div className="p-6 text-center text-slate-400 text-xs font-bold tracking-widest uppercase">
+                  Нет ближайших целей
                 </div>
-                <p className="text-xs font-bold mt-1">Симуляция НИШ №8</p>
-                <p className="text-[10px] text-slate-500 uppercase mt-1">25 вопросов | 45 мин</p>
-              </div>
-              <div className="p-4 border-b hover:bg-slate-50">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-100 text-blue-700 rounded">ОБЫЧНО</span>
-                  <span className="text-[10px] text-slate-400 font-mono">14 Май, 09:00</span>
-                </div>
-                <p className="text-xs font-bold mt-1">Тест на паттерны IQ</p>
-                <p className="text-[10px] text-slate-500 uppercase mt-1">15 вопросов | 20 мин</p>
-              </div>
+              )}
             </div>
           </div>
 
-          <div className="bg-primary text-white p-6 shadow-sm rounded-3xl md:rounded-none">
+          <div className="bg-primary text-white p-6 shadow-sm rounded-none md:rounded-none">
             <h3 className="text-sm font-bold uppercase tracking-widest text-accent mb-4">Академический статус</h3>
             <p className="text-xs text-slate-300 leading-relaxed mb-6">
-              Ваш уровень подготовки оценивается как стабильный. Для достижения максимального балла в НИШ рекомендуем сосредоточиться на задачах логики уровня B2.
+              {userStats.readiness < 30 
+                ? "Вам нужно больше практиковаться. Начните с базовых тем и регулярных занятий для повышения уровня."
+                : userStats.readiness < 70 
+                  ? "Ваш уровень подготовки оценивается как стабильный. Для достижения максимального балла в НИШ рекомендуем сосредоточиться на слабых темах."
+                  : "Отлично! Вы показываете высокие результаты. Продолжайте в том же духе, чтобы удерживать академическое лидерство."}
             </p>
-            <button className="w-full py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-xs font-bold uppercase tracking-widest transition-all">
+            <button onClick={() => document.getElementById('courses')?.scrollIntoView({ behavior: 'smooth' })} className="block w-full text-center py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-none text-xs font-bold uppercase tracking-widest transition-all">
               Посмотреть план
             </button>
           </div>
 
-          <div className="bg-white border p-6 shadow-sm rounded-3xl md:rounded-none">
+          <div className="bg-white border p-6 shadow-sm rounded-none md:rounded-none">
             <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
               <MessageSquare size={16} className="text-accent" />
               Открытый чат
@@ -441,124 +507,15 @@ export default function Dashboard() {
                 ? 'Общайтесь со своими учениками и консультируйте их в режиме реального времени.'
                 : 'У вас возникли вопросы по материалу? Вы можете задать их напрямую своему куратору или преподавателю курса.'}
             </p>
-            <button 
-              onClick={() => setIsChatOpen(true)}
-              className="w-full py-3 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold uppercase tracking-widest transition-all text-primary block text-center"
+            <Link 
+              to="/chat"
+              className="w-full py-3 bg-slate-100 hover:bg-slate-200 rounded-none text-xs font-bold uppercase tracking-widest transition-all text-primary block text-center"
             >
               {user?.role === 'teacher' ? 'Открыть чат учителя' : 'Перейти к чату'}
-            </button>
+            </Link>
           </div>
         </div>
       </div>
-
-      {/* Chat Modal */}
-      <AnimatePresence>
-        {isChatOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsChatOpen(false)}
-              className="absolute inset-0 bg-primary/60 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-4xl h-[600px] rounded-3xl overflow-hidden shadow-2xl relative z-10 flex"
-            >
-              {/* Sidebar */}
-              <div className="w-64 border-r bg-slate-50 flex flex-col">
-                <div className="p-6 border-b bg-white">
-                  <h3 className="font-bold text-primary text-xs uppercase tracking-widest">Предметы</h3>
-                </div>
-                <div className="flex-1 overflow-y-auto">
-                  {SUBJECTS.map(s => (
-                    <button 
-                      key={s.id}
-                      onClick={() => setSelectedSubject(s.id)}
-                      className={`w-full p-4 flex items-center gap-3 hover:bg-slate-100 transition-colors border-b border-slate-100 ${selectedSubject === s.id ? 'bg-accent/10 border-l-4 border-l-accent' : ''}`}
-                    >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold italic shrink-0 text-xs transition-all ${selectedSubject === s.id ? 'bg-accent text-primary' : 'bg-primary/10 text-primary'}`}>
-                        {s.name?.charAt(0)}
-                      </div>
-                      <div className="text-left overflow-hidden">
-                        <p className={`font-bold text-[11px] truncate leading-none mb-1 ${selectedSubject === s.id ? 'text-primary' : 'text-slate-600'}`}>{s.name}</p>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none">Консультация</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Chat Area */}
-              <div className="flex-1 flex flex-col bg-white">
-                {selectedSubject ? (
-                  <>
-                    <div className="p-6 border-b flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center font-bold text-primary italic">
-                          {selectedSubject.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-primary text-sm">{getSubjectLabel(selectedSubject)}</h3>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                            {selectedTeacher ? `Учитель: ${selectedTeacher.name}` : 'Поиск преподавателя...'}
-                          </p>
-                        </div>
-                      </div>
-                      <button onClick={() => setIsChatOpen(false)} className="text-slate-300 hover:text-primary"><X size={20} /></button>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/20">
-                      {messages.map((m, i) => {
-                        const isMe = m.senderId === user?.id;
-                        return (
-                          <div key={m.id || i} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
-                            <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center font-bold text-xs italic ${isMe ? 'bg-accent text-primary' : 'bg-primary/10 text-primary'}`}>
-                              {isMe ? 'Я' : selectedTeacher?.name?.charAt(0) || '?'}
-                            </div>
-                            <div className={`p-4 rounded-2xl max-w-[80%] shadow-sm ${isMe ? 'bg-primary text-white rounded-tr-none' : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none'}`}>
-                              <p className="text-sm leading-relaxed">{m.text}</p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {!selectedTeacher && !chatLoading && (
-                        <div className="text-center p-4 bg-amber-50 text-amber-700 rounded-xl text-xs font-bold border border-amber-100 opacity-60">
-                          Преподаватель по этому предмету пока не назначен. Ваше сообщение увидит администрация.
-                        </div>
-                      )}
-                      <div ref={chatEndRef} />
-                    </div>
-                    <form onSubmit={sendMsg} className="p-4 border-t bg-slate-50">
-                      <div className="relative">
-                        <input 
-                          value={newMsg}
-                          onChange={e => setNewMsg(e.target.value)}
-                          placeholder={`Напишите ваш вопрос по предмету ${getSubjectLabel(selectedSubject)}...`}
-                          className="w-full bg-white pl-5 pr-20 py-4 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-accent outline-none text-sm shadow-sm"
-                        />
-                        <button className="absolute right-2 top-2 bottom-2 bg-primary text-white px-5 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-primary/90">
-                          <Send size={14} />
-                        </button>
-                      </div>
-                    </form>
-                  </>
-                ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
-                    <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-300 mb-6">
-                      <MessageSquare size={32} />
-                    </div>
-                    <h3 className="font-bold text-primary mb-2">Ваши чаты по предметам</h3>
-                    <p className="text-xs text-slate-400 max-w-xs mx-auto">Выберите интересующий вас предмет слева, чтобы задать вопрос соответствующему преподавателю.</p>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

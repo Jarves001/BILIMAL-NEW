@@ -26,6 +26,8 @@ export default function Navbar() {
               <>
                 <Link to="/dashboard" className="hover:text-accent transition-colors">Обучение</Link>
                 {user.role === 'admin' && <Link to="/admin" className="hover:text-accent transition-colors">Админ</Link>}
+                {user.role === 'moderator' && <Link to="/moderator" className="hover:text-accent transition-colors">Модерация</Link>}
+                {user.role === 'curator' && <Link to="/curator" className="hover:text-accent transition-colors">Куратор</Link>}
               </>
             )}
             

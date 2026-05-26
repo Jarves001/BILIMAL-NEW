@@ -78,7 +78,7 @@ export default function CourseView() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white border shadow-sm p-8 rounded-3xl overflow-hidden relative">
+      <div className="bg-white border shadow-sm p-8 rounded-none overflow-hidden relative">
         <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
         <div className="relative z-10">
           <div className="text-[10px] uppercase text-accent font-black tracking-[0.3em] mb-2">Academic Course</div>
@@ -91,7 +91,7 @@ export default function CourseView() {
         <div className="lg:col-span-2 space-y-6">
           {/* Video Player Section */}
           {activeLesson && (
-            <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+            <div className="bg-white border border-slate-200 rounded-none overflow-hidden shadow-sm">
               <div className="aspect-video bg-black relative flex items-center justify-center">
                 {activeLesson.video_url ? (
                   getYoutubeId(activeLesson.video_url) ? (
@@ -125,7 +125,7 @@ export default function CourseView() {
                 </div>
                 <Link 
                   to={`/lessons/${activeLesson.id}/test?courseId=${id}`}
-                  className="bg-primary text-white px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-primary/90 transition-all flex items-center gap-2"
+                  className="bg-primary text-white px-6 py-3 rounded-none font-bold text-[10px] uppercase tracking-widest hover:bg-primary/90 transition-all flex items-center gap-2"
                 >
                   Пройти тест <ClipboardList size={14} />
                 </Link>
@@ -133,7 +133,7 @@ export default function CourseView() {
             </div>
           )}
 
-          <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-none overflow-hidden shadow-sm">
             <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
               <h3 className="text-xs font-black uppercase tracking-widest text-primary">Программа обучения</h3>
               <span className="text-[10px] font-bold text-slate-400">{course.lessons.length} Модулей</span>
@@ -145,7 +145,7 @@ export default function CourseView() {
                   onClick={() => !lesson.video_locked && setActiveLesson(lesson)}
                   className={`p-6 flex items-center gap-6 hover:bg-slate-50 transition-all cursor-pointer group ${activeLesson?.id === lesson.id ? 'bg-accent/5 border-l-4 border-l-accent' : ''}`}
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shrink-0 transition-all ${
+                  <div className={`w-10 h-10 rounded-none flex items-center justify-center font-black text-sm shrink-0 transition-all ${
                     activeLesson?.id === lesson.id ? 'bg-accent text-primary' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200 group-hover:text-primary'
                   }`}>
                     {idx + 1}
@@ -201,7 +201,7 @@ export default function CourseView() {
                   : 'Откройте доступ ко всем 20+ урокам курса и расширенной базе вопросов НИШ.'}
               </p>
               {!isSubscribed && (
-                <Link to="/subscriptions" className="w-full py-3 bg-accent text-primary rounded-xl font-bold text-[10px] uppercase tracking-widest hover:scale-105 transition-all flex items-center justify-center gap-2">
+                <Link to="/subscriptions" className="w-full py-3 bg-accent text-primary rounded-none font-bold text-[10px] uppercase tracking-widest hover:scale-105 transition-all flex items-center justify-center gap-2">
                   Активировать
                 </Link>
               )}

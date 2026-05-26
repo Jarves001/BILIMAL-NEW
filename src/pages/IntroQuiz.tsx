@@ -156,8 +156,8 @@ export default function IntroQuiz() {
           <h2 className="text-3xl font-bold mb-2">Попытки закончились!</h2>
           <p className="text-slate-500 mb-8">Не расстраивайтесь, это отличный повод начать обучение.</p>
           <div className="space-y-3">
-            <button onClick={retry} className="w-full py-4 bg-slate-100 font-bold rounded-xl hover:bg-slate-200 transition-all">Попробовать снова</button>
-            <button onClick={() => navigate('/register')} className="w-full py-4 bg-primary text-white font-bold rounded-xl hover:shadow-lg transition-all">Зарегистрироваться</button>
+            <button onClick={retry} className="w-full py-4 bg-slate-100 font-bold rounded-none hover:bg-slate-200 transition-all">Попробовать снова</button>
+            <button onClick={() => navigate('/register')} className="w-full py-4 bg-primary text-white font-bold rounded-none hover:shadow-lg transition-all">Зарегистрироваться</button>
           </div>
         </motion.div>
       </div>
@@ -173,7 +173,7 @@ export default function IntroQuiz() {
           <p className="text-slate-600 text-lg mb-8 font-medium">Вы успешно прошли вступительный тест! У вас отличный потенциал для поступления в НИШ или БИЛ.</p>
           <button 
             onClick={() => navigate('/register')}
-            className="w-full btn-primary bg-primary py-5 text-xl font-black rounded-2xl shadow-xl flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all"
+            className="w-full btn-primary bg-primary py-5 text-xl font-black rounded-none shadow-xl flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all"
           >
             Продолжить обучение <ChevronRight />
           </button>
@@ -199,7 +199,7 @@ export default function IntroQuiz() {
     <div className="min-h-screen bg-slate-50 flex flex-col items-center p-4 pt-12">
       <div className="w-full max-w-xl">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8 bg-white p-4 rounded-2xl shadow-sm">
+        <div className="flex justify-between items-center mb-8 bg-white p-4 rounded-none shadow-sm">
           <div className="flex items-center gap-1">
             {[...Array(3)].map((_, i) => (
               <Heart 
@@ -243,7 +243,7 @@ export default function IntroQuiz() {
                     key={i}
                     onClick={() => handleAnswer(i)}
                     disabled={selectedOption !== null}
-                    className={`w-full p-5 text-left rounded-2xl border-2 font-bold transition-all flex items-center justify-between group
+                    className={`w-full p-5 text-left rounded-none border-2 font-bold transition-all flex items-center justify-between group
                       ${selectedOption === null ? 'border-slate-100 hover:border-primary hover:bg-slate-50' : ''}
                       ${showSuccess ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : ''}
                       ${showDanger ? 'border-red-500 bg-red-50 text-red-700' : ''}

@@ -58,7 +58,7 @@ export default function Login() {
           </div>
           
           {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm text-center font-medium border border-red-100 animate-shake">
+            <div className="bg-red-50 text-red-600 p-3 rounded-none mb-6 text-sm text-center font-medium border border-red-100 animate-shake">
               {error}
             </div>
           )}
@@ -72,7 +72,7 @@ export default function Login() {
                   type="email"
                   required
                   placeholder="example@mail.com"
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all placeholder:text-slate-300"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-none focus:ring-2 focus:ring-primary outline-none transition-all placeholder:text-slate-300"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -87,7 +87,7 @@ export default function Login() {
                   type="password"
                   required
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all placeholder:text-slate-300"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-none focus:ring-2 focus:ring-primary outline-none transition-all placeholder:text-slate-300"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -97,7 +97,7 @@ export default function Login() {
             <button 
               type="submit" 
               disabled={isLoggingIn}
-              className="w-full btn-primary bg-primary py-4 font-bold rounded-xl mt-2 flex items-center justify-center gap-2 hover:shadow-lg active:scale-95 transition-all disabled:opacity-50"
+              className="w-full btn-primary bg-primary py-4 font-bold rounded-none mt-2 flex items-center justify-center gap-2 hover:shadow-lg active:scale-95 transition-all disabled:opacity-50"
             >
               {isLoggingIn ? 'Вход...' : 'Войти'}
             </button>
@@ -115,7 +115,7 @@ export default function Login() {
           <button 
             onClick={handleGoogleLogin} 
             disabled={isLoggingIn}
-            className="w-full flex items-center justify-center gap-3 bg-white border-2 border-slate-100 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-95 disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-3 bg-white border-2 border-slate-100 py-3 rounded-none font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-95 disabled:opacity-50"
           >
             <Chrome className="text-primary" size={20} />
             Google

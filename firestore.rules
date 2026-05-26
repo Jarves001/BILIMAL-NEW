@@ -24,6 +24,22 @@ service cloud.firestore {
       );
     }
     
+    function isModerator() {
+      return isSignedIn() && (
+        isAdmin() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'moderator')
+      );
+    }
+
+    function isCurator() {
+      return isSignedIn() && (
+        isAdmin() || isModerator() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'curator')
+      );
+    }
+    
     function isTeacher() {
       // Safer check for teacher role using get() wrapper
       return isSignedIn() && (
@@ -40,7 +56,7 @@ service cloud.firestore {
           && data.keys().size() >= 5
           && data.name is string && data.name.size() > 0 && data.name.size() <= 100
           && data.email is string && data.email.size() > 0 && data.email.size() <= 100
-          && data.role in ['admin', 'teacher', 'student']
+          && data.role in ['admin', 'teacher', 'student', 'moderator', 'curator']
           && data.subscription_status in ['active', 'inactive'];
     }
 
@@ -132,25 +148,30 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin() || isTeacher());
-      allow list: if isSignedIn() && (isAdmin() || (resource.data.role == 'teacher'));
+      allow get: if isSignedIn() && (request.auth.uid == userId || isModerator() || isCurator() || isTeacher());
+      allow list: if isSignedIn() && (isModerator() || isCurator() || (resource.data.role == 'teacher'));
       allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
-      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin()) && (
-        (request.auth.uid == userId && incoming().diff(existing()).affectedKeys().hasOnly(['name'])) ||
-        (isAdmin())
+      allow update: if isSignedIn() && (request.auth.uid == userId || isModerator()) && (
+        (request.auth.uid == userId && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'shift'])) ||
+        (isModerator())
       );
     }
 
     match /users/{userId}/subscription/{docId} {
-      allow get, list: if isOwner(userId) || isAdmin();
-      allow create, update, delete: if isAdmin();
+      allow get, list: if isOwner(userId) || isModerator();
+      allow create, update, delete: if isModerator();
     }
 
     match /teacher_applications/{applicationId} {
-      allow get: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow get: if isSignedIn() && (resource.data.user_id == request.auth.uid || isModerator());
+      allow list: if isSignedIn() && (resource.data.user_id == request.auth.uid || isModerator());
       allow create: if isSignedIn() && isValidTeacherApplication(incoming());
-      allow update: if isAdmin();
+      allow update: if isModerator();
+    }
+
+    match /groups/{groupId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isModerator() || isCurator();
     }
 
     match /courses/{courseId} {

@@ -110,7 +110,11 @@ async function startServer() {
       const token = authHeader.split(' ')[1];
       try {
         const decodedToken = await auth.verifyIdToken(token);
-        req.user = decodedToken;
+        const userDoc = await db.collection('users').doc(decodedToken.uid).get();
+        req.user = { 
+          ...decodedToken, 
+          role: userDoc.exists ? userDoc.data()?.role : undefined 
+        };
         next();
       } catch (err: any) {
         console.error('AUTH ERROR (403):', err.message);
@@ -186,17 +190,17 @@ async function startServer() {
   };
 
   // --- SUBSCRIPTION ROUTES ---
-  app.get('/api/my-subscription', authenticate, async (req: any, res) => {
+  app.get('/api/my-plan', authenticate, async (req: any, res) => {
     try {
       const sub = await getSubscription(req.user.uid);
       res.json(sub);
     } catch (err: any) {
-      console.warn('api/my-subscription error:', err.message);
+      console.warn('api/my-plan error:', err.message);
       res.json(null);
     }
   });
 
-  app.post('/api/subscribe', authenticate, async (req: any, res) => {
+  app.post('/api/purchase', authenticate, async (req: any, res) => {
     const { plan } = req.body;
     if (!PLANS[plan as keyof typeof PLANS]) return res.status(400).json({ error: 'Invalid plan' });
     
@@ -356,9 +360,9 @@ async function startServer() {
       const usersList = [];
       
       for (const d of usersSnap.docs) {
-        const u = { id: d.id, ...d.data() };
+        const u: any = { id: d.id, ...d.data() };
         
-        if (!u.role || u.role === 'student' || u.role === 'teacher' || u.role === 'admin') {
+        if (true) {
           try {
             const subSnap = await db.collection('users').doc(u.id).collection('subscription').doc('current').get();
             if (subSnap.exists) {
@@ -385,11 +389,29 @@ async function startServer() {
     }
   });
 
-  app.put('/api/admin/users/:id/role', authenticate, async (req: any, res) => {
-    if (req.user.email !== 'jarves276@gmail.com' && req.user.role !== 'admin') {
-       return res.status(403).json({ error: 'Admin access required' });
+  app.put('/api/admin/users/:id', authenticate, async (req: any, res) => {
+    if (req.user.email !== 'jarves276@gmail.com' && req.user.role !== 'admin' && req.user.role !== 'moderator') {
+       return res.status(403).json({ error: 'Admin/Moderator access required' });
     }
     try {
+      if (req.body.role === 'admin') {
+         return res.status(400).json({ error: 'Cannot assign admin role' });
+      }
+      await db.collection('users').doc(req.params.id).update(req.body);
+      res.json({ message: 'User updated' });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.put('/api/admin/users/:id/role', authenticate, async (req: any, res) => {
+    if (req.user.email !== 'jarves276@gmail.com' && req.user.role !== 'admin' && req.user.role !== 'moderator') {
+       return res.status(403).json({ error: 'Admin/Moderator access required' });
+    }
+    try {
+      if (req.body.role === 'admin') {
+         return res.status(400).json({ error: 'Cannot assign admin role' });
+      }
       await db.collection('users').doc(req.params.id).update({ role: req.body.role });
       res.json({ message: 'Role updated' });
     } catch (err: any) {
@@ -432,12 +454,45 @@ async function startServer() {
     }
   });
 
-  app.get('/api/admin/applications', authenticate, async (req: any, res) => {
-    if (req.user.email !== 'jarves276@gmail.com' && req.user.role !== 'admin') {
-       return res.status(403).json({ error: 'Admin access required' });
+  app.get('/api/moderator/applications', authenticate, async (req: any, res) => {
+    if (req.user.email !== 'jarves276@gmail.com' && req.user.role !== 'admin' && req.user.role !== 'moderator') {
+       return res.status(403).json({ error: 'Access denied' });
     }
     try {
-      const appsSnap = await db.collection('teacher_applications').get();
+      const appsSnap = await db.collection('teacher_applications').where('status', '==', 'pending').get();
+      res.json(appsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    } catch (err: any) {
+      res.status(500).json({ error: err.message, stack: err.stack });
+    }
+  });
+
+  app.put('/api/moderator/applications/:id', authenticate, async (req: any, res) => {
+    if (req.user.email !== 'jarves276@gmail.com' && req.user.role !== 'admin' && req.user.role !== 'moderator') {
+       return res.status(403).json({ error: 'Access denied' });
+    }
+    try {
+      const { status } = req.body;
+      await db.collection('teacher_applications').doc(req.params.id).update({ status });
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/admin/applications', authenticate, async (req: any, res) => {
+    if (req.user.email !== 'jarves276@gmail.com' && req.user.role !== 'admin' && req.user.role !== 'moderator') {
+       return res.status(403).json({ error: 'Admin/Moderator access required' });
+    }
+    try {
+      let appsSnap;
+      if (req.user.role === 'moderator') {
+        appsSnap = await db.collection('teacher_applications').where('status', '==', 'pending').get();
+      } else {
+        appsSnap = await db.collection('teacher_applications').where('status', '==', 'pending_admin').get();
+        if (appsSnap.empty) {
+           appsSnap = await db.collection('teacher_applications').get();
+        }
+      }
       const appsList = appsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       res.json(appsList);
     } catch (err: any) {
@@ -445,9 +500,50 @@ async function startServer() {
     }
   });
 
+  app.get('/api/groups', authenticate, async (req: any, res) => {
+    try {
+      let snap;
+      if (req.user.role === 'curator') {
+        snap = await db.collection('groups').where('curator_id', '==', req.user.id).get();
+      } else if (req.user.role === 'admin' || req.user.role === 'moderator' || req.user.email === 'jarves276@gmail.com') {
+        snap = await db.collection('groups').get();
+      } else {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      res.json(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post('/api/groups', authenticate, async (req: any, res) => {
+    if (req.user.role !== 'admin' && req.user.role !== 'moderator' && req.user.email !== 'jarves276@gmail.com') return res.status(403).json({ error: 'Access denied' });
+    try {
+      const gRef = await db.collection('groups').add({
+        ...req.body,
+        created_at: new Date().toISOString()
+      });
+      res.json({ id: gRef.id });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.put('/api/groups/:id', authenticate, async (req: any, res) => {
+     if (req.user.role !== 'admin' && req.user.role !== 'moderator' && req.user.email !== 'jarves276@gmail.com') return res.status(403).json({ error: 'Access denied' });
+     try {
+       await db.collection('groups').doc(req.params.id).update(req.body);
+       res.json({ success: true });
+     } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.delete('/api/groups/:id', authenticate, async (req: any, res) => {
+     if (req.user.role !== 'admin' && req.user.role !== 'moderator' && req.user.email !== 'jarves276@gmail.com') return res.status(403).json({ error: 'Access denied' });
+     try {
+       await db.collection('groups').doc(req.params.id).delete();
+       res.json({ success: true });
+     } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   app.put('/api/admin/applications/:id', authenticate, async (req: any, res) => {
-    if (req.user.email !== 'jarves276@gmail.com' && req.user.role !== 'admin') {
-       return res.status(403).json({ error: 'Admin access required' });
+    if (req.user.email !== 'jarves276@gmail.com' && req.user.role !== 'admin' && req.user.role !== 'moderator') {
+       return res.status(403).json({ error: 'Admin/Moderator access required' });
     }
     try {
       const { status, user_id } = req.body;

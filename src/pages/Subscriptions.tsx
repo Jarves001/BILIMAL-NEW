@@ -63,7 +63,9 @@ export default function Subscriptions() {
   useEffect(() => {
     if (user) {
       getDoc(doc(db, 'users', user.id, 'subscription', 'current'))
-        .then(snap => snap.exists() ? setCurrentSub(snap.data()) : setCurrentSub(null))
+        .then(snap => {
+          if (snap.exists()) setCurrentSub(snap.data());
+        })
         .catch(err => console.error('Failed to fetch subscription:', err));
     }
   }, [user]);
@@ -80,17 +82,17 @@ export default function Subscriptions() {
         <p className="text-slate-500 font-medium">Выберите подходящий формат и начните путь к успеху</p>
       </div>
 
-      <div className="mb-12 bg-white border-2 border-dashed border-slate-200 p-8 rounded-3xl text-center">
+      <div className="mb-12 bg-white border-2 border-dashed border-slate-200 p-8 rounded-none text-center">
         <h3 className="text-xl font-black text-primary mb-4 uppercase tracking-tighter">Как оплатить?</h3>
         <p className="text-slate-500 mb-6 font-medium">Оплатите выбранную сумму на карту и отправьте чек в WhatsApp для активации</p>
         <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-          <div className="bg-slate-50 px-8 py-4 rounded-2xl border border-slate-100">
+          <div className="bg-slate-50 px-8 py-4 rounded-none border border-slate-100">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Номер карты (Kaspi/Halyk)</p>
             <p className="text-xl font-black text-primary tracking-widest whitespace-nowrap">4400 4303 0464 5945</p>
           </div>
           <button 
             onClick={handleManualPayment}
-            className="bg-[#25D366] text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-sm hover:scale-105 transition-all shadow-lg shadow-[#25D366]/20"
+            className="bg-[#25D366] text-white px-8 py-4 rounded-none font-black uppercase tracking-widest text-sm hover:scale-105 transition-all shadow-lg shadow-[#25D366]/20"
           >
             Отправить чек в WhatsApp
           </button>
@@ -98,7 +100,7 @@ export default function Subscriptions() {
       </div>
 
       {currentSub && (
-        <div className="mb-12 bg-accent/10 border border-accent/20 p-8 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+        <div className="mb-12 bg-accent/10 border border-accent/20 p-8 rounded-none flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
@@ -118,7 +120,7 @@ export default function Subscriptions() {
         {PLANS.map((plan) => (
           <div 
             key={plan.id} 
-            className={`bg-white border-2 p-8 flex flex-col rounded-3xl relative transition-all hover:translate-y-[-8px] ${plan.popular ? 'border-primary shadow-2xl scale-105 z-10' : 'border-slate-100 shadow-sm'}`}
+            className={`bg-white border-2 p-8 flex flex-col rounded-none relative transition-all hover:translate-y-[-8px] ${plan.popular ? 'border-primary shadow-2xl scale-105 z-10' : 'border-slate-100 shadow-sm'}`}
           >
             {plan.popular && (
               <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-white px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">
@@ -126,7 +128,7 @@ export default function Subscriptions() {
               </div>
             )}
             
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-sm ${plan.id === 'yearly' ? 'bg-accent/20 text-accent' : 'bg-primary/10 text-primary'}`}>
+            <div className={`w-14 h-14 rounded-none flex items-center justify-center mb-6 shadow-sm ${plan.id === 'yearly' ? 'bg-accent/20 text-accent' : 'bg-primary/10 text-primary'}`}>
               <plan.icon size={28} />
             </div>
 
@@ -149,7 +151,7 @@ export default function Subscriptions() {
 
             <button 
               onClick={handleManualPayment}
-              className={`w-full py-4 text-xs font-black uppercase tracking-widest rounded-2xl transition-all ${
+              className={`w-full py-4 text-xs font-black uppercase tracking-widest rounded-none transition-all ${
                 plan.id === 'yearly' 
                 ? 'bg-accent text-primary hover:bg-accent/90 shadow-xl shadow-accent/20' 
                 : 'bg-primary text-white hover:bg-primary/90 shadow-xl shadow-primary/20'
@@ -167,13 +169,29 @@ export default function Subscriptions() {
         
         <div className="relative z-10">
           <h4 className="font-black text-3xl text-white mb-4 uppercase tracking-tighter">Нужна консультация?</h4>
-          <p className="text-lg text-slate-400 mb-10 max-w-2xl mx-auto font-medium">Свяжитесь с нами для получения специальных условий или помощи с выбором тарифа.</p>
-          <button 
-            onClick={handleManualPayment}
-            className="bg-white text-primary px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-accent hover:text-primary transition-all shadow-2xl"
+          <p className="text-lg text-slate-400 mb-10 max-w-2xl mx-auto font-medium">Оставьте свой номер, и наш модератор свяжется с вами, чтобы провести бесплатную консультацию и подобрать идеальный тариф.</p>
+          <form 
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const form = e.target as HTMLFormElement;
+              const phone = (form.elements.namedItem('phone') as HTMLInputElement).value;
+              try {
+                const { addDoc, collection } = await import('firebase/firestore');
+                const { db } = await import('../lib/firebase');
+                await addDoc(collection(db, 'consultation_requests'), { phone, status: 'pending', created_at: new Date() });
+                alert('Заявка на консультацию отправлена! Скоро мы с вами свяжемся.');
+                form.reset();
+              } catch (err) {
+                alert('Ошибка отправки заявки');
+              }
+            }}
+            className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto"
           >
-            Связаться с нами
-          </button>
+            <input name="phone" required type="tel" placeholder="+7 (___) ___ __ __" className="bg-white/10 border-2 border-white/20 p-4 text-white focus:ring-4 focus:ring-primary/50 focus:border-primary outline-none flex-1 placeholder-white/50 font-medium" />
+            <button type="submit" className="bg-white text-primary px-8 py-4 font-black uppercase tracking-widest text-xs hover:bg-accent transition-all">
+              Жду Звонка
+            </button>
+          </form>
         </div>
       </div>
     </div>

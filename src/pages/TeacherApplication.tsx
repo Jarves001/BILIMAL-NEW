@@ -71,7 +71,7 @@ export default function TeacherApplication() {
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white p-12 rounded-3xl shadow-xl text-center max-w-md w-full"
+          className="bg-white p-12 rounded-none shadow-xl text-center max-w-md w-full"
         >
           <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 size={40} />
@@ -82,7 +82,7 @@ export default function TeacherApplication() {
           </p>
           <button 
             onClick={() => navigate('/')}
-            className="w-full py-4 bg-primary text-white rounded-2xl font-bold uppercase tracking-widest text-sm hover:bg-primary/90 transition-all shadow-lg"
+            className="w-full py-4 bg-primary text-white rounded-none font-bold uppercase tracking-widest text-sm hover:bg-primary/90 transition-all shadow-lg"
           >
             Вернуться на главную
           </button>
@@ -104,7 +104,7 @@ export default function TeacherApplication() {
           </motion.div>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-lg p-6 md:p-10 space-y-8">
+        <form onSubmit={handleSubmit} className="bg-white rounded-none shadow-lg p-6 md:p-10 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             
             {/* Left Column: text inputs */}
@@ -118,7 +118,7 @@ export default function TeacherApplication() {
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-5 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-accent outline-none font-medium text-primary"
+                  className="w-full px-5 py-3 bg-slate-50 border-none rounded-none focus:ring-2 focus:ring-accent outline-none font-medium text-primary"
                   placeholder="Иван Иванов"
                 />
               </div>
@@ -130,7 +130,7 @@ export default function TeacherApplication() {
                   required
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-5 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-accent outline-none font-medium text-primary"
+                  className="w-full px-5 py-3 bg-slate-50 border-none rounded-none focus:ring-2 focus:ring-accent outline-none font-medium text-primary"
                   placeholder="+7 (___) ___-__-__"
                 />
               </div>
@@ -141,7 +141,7 @@ export default function TeacherApplication() {
                   required
                   value={formData.education_level}
                   onChange={(e) => setFormData({ ...formData, education_level: e.target.value })}
-                  className="w-full px-5 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-accent outline-none font-medium text-primary appearance-none"
+                  className="w-full px-5 py-3 bg-slate-50 border-none rounded-none focus:ring-2 focus:ring-accent outline-none font-medium text-primary appearance-none"
                 >
                   <option value="">Выберите уровень</option>
                   <option value="bachelor">Бакалавр</option>
@@ -159,7 +159,7 @@ export default function TeacherApplication() {
                   required
                   value={formData.university}
                   onChange={(e) => setFormData({ ...formData, university: e.target.value })}
-                  className="w-full px-5 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-accent outline-none font-medium text-primary"
+                  className="w-full px-5 py-3 bg-slate-50 border-none rounded-none focus:ring-2 focus:ring-accent outline-none font-medium text-primary"
                   placeholder="Например: Назарбаев Университет"
                 />
               </div>
@@ -175,7 +175,7 @@ export default function TeacherApplication() {
                   required
                   value={formData.subject}
                   onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  className="w-full px-5 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-accent outline-none font-medium text-primary appearance-none"
+                  className="w-full px-5 py-3 bg-slate-50 border-none rounded-none focus:ring-2 focus:ring-accent outline-none font-medium text-primary appearance-none"
                 >
                   <option value="math">Математика</option>
                   <option value="logic">Логика & IQ</option>
@@ -194,7 +194,7 @@ export default function TeacherApplication() {
                   min="0"
                   value={formData.experience}
                   onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
-                  className="w-full px-5 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-accent outline-none font-medium text-primary"
+                  className="w-full px-5 py-3 bg-slate-50 border-none rounded-none focus:ring-2 focus:ring-accent outline-none font-medium text-primary"
                   placeholder="0"
                 />
               </div>
@@ -205,7 +205,7 @@ export default function TeacherApplication() {
                   rows={4}
                   value={formData.about}
                   onChange={(e) => setFormData({ ...formData, about: e.target.value })}
-                  className="w-full px-5 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-accent outline-none font-medium text-primary resize-none"
+                  className="w-full px-5 py-3 bg-slate-50 border-none rounded-none focus:ring-2 focus:ring-accent outline-none font-medium text-primary resize-none"
                   placeholder="Расскажите о своих успехах, методике преподавания, опыте подготовки к экзаменам НИШ/БИЛ..."
                 />
               </div>
@@ -216,21 +216,21 @@ export default function TeacherApplication() {
             <h3 className="font-black text-primary mb-4">Документы (по желанию, макс. 250КБ каждый)</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               
-              <div className="relative group cursor-pointer bg-slate-50 rounded-xl p-4 border-2 border-dashed border-slate-200 hover:border-accent hover:bg-white transition-all text-center">
+              <div className="relative group cursor-pointer bg-slate-50 rounded-none p-4 border-2 border-dashed border-slate-200 hover:border-accent hover:bg-white transition-all text-center">
                 <input type="file" accept="image/*,.pdf" onChange={(e) => handleFileUpload(e, 'resume_file')} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                 <Briefcase className={`mx-auto mb-2 ${formData.resume_file ? 'text-accent' : 'text-slate-400 group-hover:text-accent'} transition-colors`} />
                 <span className="text-xs font-bold block text-slate-700">Резюме / CV</span>
                 {formData.resume_file && <span className="text-[10px] text-green-600 font-bold mt-1 block">Загружено ✓</span>}
               </div>
 
-              <div className="relative group cursor-pointer bg-slate-50 rounded-xl p-4 border-2 border-dashed border-slate-200 hover:border-accent hover:bg-white transition-all text-center">
+              <div className="relative group cursor-pointer bg-slate-50 rounded-none p-4 border-2 border-dashed border-slate-200 hover:border-accent hover:bg-white transition-all text-center">
                 <input type="file" accept="image/*,.pdf" onChange={(e) => handleFileUpload(e, 'diploma_file')} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                 <GraduationCap className={`mx-auto mb-2 ${formData.diploma_file ? 'text-accent' : 'text-slate-400 group-hover:text-accent'} transition-colors`} />
                 <span className="text-xs font-bold block text-slate-700">Диплом / Сертификаты</span>
                 {formData.diploma_file && <span className="text-[10px] text-green-600 font-bold mt-1 block">Загружено ✓</span>}
               </div>
 
-              <div className="relative group cursor-pointer bg-slate-50 rounded-xl p-4 border-2 border-dashed border-slate-200 hover:border-accent hover:bg-white transition-all text-center">
+              <div className="relative group cursor-pointer bg-slate-50 rounded-none p-4 border-2 border-dashed border-slate-200 hover:border-accent hover:bg-white transition-all text-center">
                 <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'photo_file')} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                 <ImageIcon className={`mx-auto mb-2 ${formData.photo_file ? 'text-accent' : 'text-slate-400 group-hover:text-accent'} transition-colors`} />
                 <span className="text-xs font-bold block text-slate-700">Личное фото</span>
@@ -240,7 +240,7 @@ export default function TeacherApplication() {
             </div>
           </div>
 
-          <div className="flex items-start gap-3 p-4 bg-accent/5 rounded-2xl border border-accent/10">
+          <div className="flex items-start gap-3 p-4 bg-accent/5 rounded-none border border-accent/10">
             <input type="checkbox" required className="mt-1 accent-accent" id="teacher-checkbox" />
             <label htmlFor="teacher-checkbox" className="text-xs text-slate-600 leading-relaxed cursor-pointer">
               Я подтверждаю достоверность всех предоставленных данных и выражаю готовность пройти собеседование.
@@ -250,7 +250,7 @@ export default function TeacherApplication() {
           <button 
             type="submit"
             disabled={loading}
-            className="w-full py-4 bg-primary text-white rounded-2xl font-bold uppercase tracking-widest text-sm hover:bg-primary/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2 group shadow-xl"
+            className="w-full py-4 bg-primary text-white rounded-none font-bold uppercase tracking-widest text-sm hover:bg-primary/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2 group shadow-xl"
           >
             {loading ? (
               <span className="animate-pulse">Отправка...</span>

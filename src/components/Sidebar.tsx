@@ -8,7 +8,8 @@ import {
   Shield, 
   GraduationCap,
   LogOut,
-  User as UserIcon
+  User as UserIcon,
+  MessageCircle
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { SUBJECTS } from '../constants';
@@ -23,6 +24,7 @@ export default function Sidebar() {
 
   const links = [
     { name: 'Портал', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Чат', path: '/chat', icon: MessageCircle },
     { name: 'Мой профиль', path: '/profile', icon: UserIcon },
     ...(user?.role !== 'teacher' ? [{ name: 'Настроить тариф', path: '/subscriptions', icon: Trophy }] : []),
   ];

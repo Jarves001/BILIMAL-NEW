@@ -16,7 +16,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'teacher' | 'student';
+  role: 'admin' | 'teacher' | 'student' | 'curator' | 'moderator';
   subject?: string;
   subscription: 'active' | 'inactive';
   subInfo?: {
@@ -95,9 +95,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const data = docSnap.data();
               
               // Fetch subscription
-              const subDocRef = doc(db, 'users', firebaseUser.uid, 'subscription', 'current');
-              const subSnap = await getDoc(subDocRef);
-              const subInfo = subSnap.exists() ? subSnap.data() as User['subInfo'] : null;
+              let subInfo = null;
+              try {
+                const subDocRef = doc(db, 'users', firebaseUser.uid, 'subscription', 'current');
+                const subSnap = await getDoc(subDocRef);
+                subInfo = subSnap.exists() ? subSnap.data() as User['subInfo'] : null;
+              } catch (err: any) {
+                console.warn('Failed to fetch subscription from db in useAuth:', err.message);
+                // Fallback to checking from token/api or just leave it null
+              }
 
               const userEmail = firebaseUser.email?.toLowerCase() || '';
               const isAdminUser = userEmail === 'jarves276@gmail.com';
@@ -166,8 +172,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loginWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (err: any) {
+      console.error('Google login error:', err);
+      if (err.code === 'auth/unauthorized-domain') {
+        alert('Ошибка: Домен не авторизован для входа через Google. Добавьте его в Firebase Console -> Authentication -> Settings -> Authorized domains.');
+      } else {
+        alert(`Ошибка при входе через Google: ${err.message}`);
+      }
+    }
   };
 
   const registerEmail = async (email: string, password: string, name: string) => {

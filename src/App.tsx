@@ -13,9 +13,13 @@ import CourseView from './pages/CourseView';
 import TestView from './pages/TestView';
 import ExamView from './pages/ExamView';
 import AdminDashboard from './pages/AdminDashboard';
+import Chat from './pages/Chat';
+import ModeratorDashboard from './pages/ModeratorDashboard';
+import CuratorDashboard from './pages/CuratorDashboard';
 import AppLayout from './layouts/AppLayout';
 import Logo from './components/Logo';
 import TeacherApplication from './pages/TeacherApplication';
+import CuratorApplication from './pages/CuratorApplication';
 import TeacherDashboard from './pages/TeacherDashboard';
 
 import Subscriptions from './pages/Subscriptions';
@@ -49,6 +53,7 @@ function MainRoutes() {
           <Route path="/register" element={<Register />} />
           <Route path="/quiz" element={<IntroQuiz />} />
           <Route path="/teacher-application" element={<TeacherApplication />} />
+          <Route path="/curator-application" element={<CuratorApplication />} />
           
           <Route path="/dashboard" element={<PrivateRoute title="Студенческий портал"><Dashboard /></PrivateRoute>} />
           <Route path="/teacher" element={<PrivateRoute title="Панель учителя"><TeacherDashboard /></PrivateRoute>} />
@@ -57,7 +62,10 @@ function MainRoutes() {
           <Route path="/courses/:id" element={<PrivateRoute title="Просмотр курса"><CourseView /></PrivateRoute>} />
           <Route path="/lessons/:lessonId/test" element={<PrivateRoute title="Студенческий портал"><TestView /></PrivateRoute>} />
           <Route path="/exam/:examId" element={<ExamView />} />
+          <Route path="/chat" element={<PrivateRoute title="Чат и связи"><Chat /></PrivateRoute>} />
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="/moderator" element={<PrivateRoute title="Модерация"><ModeratorDashboard /></PrivateRoute>} />
+          <Route path="/curator" element={<PrivateRoute title="Кураторство"><CuratorDashboard /></PrivateRoute>} />
         </Routes>
       </main>
       {(isHomePage || isAuthPage) && (
@@ -70,9 +78,14 @@ function MainRoutes() {
               BILIMAL — ведущая образовательная платформа для фундаментальной подготовки к поступлению в НИШ и БИЛ.
             </p>
             <div className="h-px w-16 bg-accent/30 mx-auto my-8" />
-            <Link to="/teacher-application" className="mb-8 inline-block px-6 py-2 border border-accent/30 text-accent rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-accent hover:text-primary transition-all">
-              Вакансии для учителей
-            </Link>
+            <div className="flex justify-center gap-4 mb-8">
+              <Link to="/teacher-application" className="inline-block px-6 py-2 border border-accent/30 text-accent rounded-none text-[10px] font-bold uppercase tracking-widest hover:bg-accent hover:text-primary transition-all">
+                Вакансии для учителей
+              </Link>
+              <Link to="/curator-application" className="inline-block px-6 py-2 border border-white/50 text-white rounded-none text-[10px] font-bold uppercase tracking-widest hover:bg-white hover:text-primary transition-all">
+                Вакансии для кураторов
+              </Link>
+            </div>
             <p className="text-xs">© 2026 BILIMAL. Все права защищены.</p>
             <p className="text-[10px] mt-4 uppercase tracking-[0.3em] text-gray-600 font-bold">Strict Academic Excellence</p>
           </div>

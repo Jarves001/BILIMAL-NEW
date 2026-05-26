@@ -123,19 +123,19 @@ export default function ExamView() {
           animate={{ opacity: 1, scale: 1 }}
           className="bg-white max-w-lg w-full rounded-[40px] shadow-2xl p-12 text-center"
         >
-          <div className="w-24 h-24 bg-accent/20 rounded-3xl flex items-center justify-center mx-auto mb-8 text-primary">
+          <div className="w-24 h-24 bg-accent/20 rounded-none flex items-center justify-center mx-auto mb-8 text-primary">
             <Lock size={48} />
           </div>
           <h2 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Доступ ограничен</h2>
           <p className="text-slate-400 font-bold uppercase text-xs tracking-widest mb-10">Этот экзамен доступен только подписчикам</p>
           
-          <div className="bg-slate-50 rounded-3xl p-8 mb-8">
+          <div className="bg-slate-50 rounded-none p-8 mb-8">
             <p className="text-sm font-medium text-slate-600 leading-relaxed mb-6">
               Активируйте подписку, чтобы получить неограниченный доступ ко всем еженедельным экзаменам, видео-урокам и консультациям с учителями.
             </p>
             <Link 
               to="/subscriptions"
-              className="w-full py-5 bg-accent text-primary rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 transition-all shadow-xl shadow-accent/20"
+              className="w-full py-5 bg-accent text-primary rounded-none font-black uppercase tracking-widest text-xs hover:scale-105 transition-all shadow-xl shadow-accent/20"
             >
               Выбрать тарифный план
             </Link>
@@ -163,13 +163,13 @@ export default function ExamView() {
           animate={{ opacity: 1, scale: 1 }}
           className="bg-white max-w-lg w-full rounded-[40px] shadow-2xl p-12 text-center"
         >
-          <div className="w-24 h-24 bg-accent/20 rounded-3xl flex items-center justify-center mx-auto mb-8 text-primary">
+          <div className="w-24 h-24 bg-accent/20 rounded-none flex items-center justify-center mx-auto mb-8 text-primary">
             <Trophy size={48} />
           </div>
           <h2 className="text-3xl font-black text-primary uppercase tracking-tight mb-2">Экзамен завершен!</h2>
           <p className="text-slate-400 font-bold uppercase text-xs tracking-widest mb-10">Ваш результат зафиксирован</p>
           
-          <div className="bg-slate-50 rounded-3xl p-8 mb-8">
+          <div className="bg-slate-50 rounded-none p-8 mb-8">
             <div className="text-6xl font-black text-primary mb-2">{score} / {questions.length}</div>
             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Правильных ответов</p>
             <div className="w-full bg-slate-200 h-3 mt-6 rounded-full overflow-hidden">
@@ -184,7 +184,7 @@ export default function ExamView() {
 
           <button 
             onClick={() => navigate('/dashboard')}
-            className="w-full py-5 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-primary/90 transition-all shadow-xl shadow-primary/20"
+            className="w-full py-5 bg-primary text-white rounded-none font-black uppercase tracking-widest text-xs hover:bg-primary/90 transition-all shadow-xl shadow-primary/20"
           >
             Вернуться в панель
           </button>
@@ -202,7 +202,7 @@ export default function ExamView() {
          <div className="flex items-center gap-4">
             <button 
                onClick={() => { if(window.confirm('Вы уверены? Прогресс будет потерян.')) navigate('/dashboard'); }}
-               className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all"
+               className="w-10 h-10 rounded-none bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all"
             >
               <ArrowLeft size={18} />
             </button>
@@ -213,7 +213,7 @@ export default function ExamView() {
                </div>
             </div>
          </div>
-         <div className={`px-6 py-2 rounded-xl flex items-center gap-3 font-mono font-black text-lg transition-all ${timeLeft < 300 ? 'bg-red-500 animate-pulse' : 'bg-white/10'}`}>
+         <div className={`px-6 py-2 rounded-none flex items-center gap-3 font-mono font-black text-lg transition-all ${timeLeft < 300 ? 'bg-red-500 animate-pulse' : 'bg-white/10'}`}>
             <Timer size={20} />
             {formatTime(timeLeft)}
          </div>
@@ -244,7 +244,7 @@ export default function ExamView() {
                      : 'border-slate-100 bg-slate-50 hover:border-slate-200'
                  }`}
                >
-                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black transition-all ${
+                 <div className={`w-12 h-12 rounded-none flex items-center justify-center font-black transition-all ${
                    isSelected ? 'bg-accent text-primary scale-110 shadow-lg' : 'bg-white text-slate-300'
                  }`}>
                    {opt}
@@ -263,7 +263,7 @@ export default function ExamView() {
            <button 
              disabled={currentIdx === 0}
              onClick={() => setCurrentIdx(prev => prev - 1)}
-             className="flex items-center gap-2 px-6 py-4 rounded-2xl font-bold uppercase tracking-widest text-xs text-slate-400 hover:text-primary disabled:opacity-0 transition-all"
+             className="flex items-center gap-2 px-6 py-4 rounded-none font-bold uppercase tracking-widest text-xs text-slate-400 hover:text-primary disabled:opacity-0 transition-all"
            >
              <ChevronLeft size={18} /> Назад
            </button>
@@ -271,14 +271,14 @@ export default function ExamView() {
            {currentIdx === questions.length - 1 ? (
              <button 
                onClick={() => { if(window.confirm('Завершить экзамен?')) handleSubmit(); }}
-               className="bg-accent text-primary px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 shadow-xl transition-all"
+               className="bg-accent text-primary px-10 py-5 rounded-none font-black uppercase tracking-widest text-xs hover:scale-105 shadow-xl transition-all"
              >
                Завершить экзамен
              </button>
            ) : (
              <button 
                onClick={() => setCurrentIdx(prev => prev + 1)}
-               className="bg-primary text-white px-10 py-5 rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:bg-primary/90 shadow-xl transition-all"
+               className="bg-primary text-white px-10 py-5 rounded-none font-bold uppercase tracking-widest text-xs flex items-center gap-2 hover:bg-primary/90 shadow-xl transition-all"
              >
                Следующий вопрос <ChevronRight size={18} />
              </button>
@@ -293,7 +293,7 @@ export default function ExamView() {
               <button 
                 key={q.id}
                 onClick={() => setCurrentIdx(idx)}
-                className={`w-10 h-10 rounded-xl shrink-0 font-black text-[10px] transition-all border-2 ${
+                className={`w-10 h-10 rounded-none shrink-0 font-black text-[10px] transition-all border-2 ${
                   currentIdx === idx ? 'bg-primary text-white border-primary shadow-lg scale-110' : 
                   answers[q.id] ? 'bg-accent/20 text-primary border-accent/30' : 'bg-white text-slate-300 border-slate-100'
                 }`}

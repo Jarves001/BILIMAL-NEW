@@ -146,10 +146,10 @@ export default function Profile() {
                   <p className="text-white/60 font-mono text-sm">ID: {user.id.slice(0, 8)}...</p>
                   {user.role === 'teacher' && (
                     <div className="flex items-center gap-2">
-                      <span className="bg-accent text-primary px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-accent/20">
+                      <span className="bg-accent text-primary px-3 py-1 rounded-none text-[10px] font-black uppercase tracking-widest shadow-lg shadow-accent/20">
                         Учитель: {getSubjectLabel((user as any).subject || 'general')}
                       </span>
-                      <span className="bg-white/10 text-white/80 px-3 py-1 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-white/10">
+                      <span className="bg-white/10 text-white/80 px-3 py-1 rounded-none text-[10px] font-bold uppercase tracking-widest border border-white/10">
                         Статус: Активен
                       </span>
                     </div>
@@ -160,14 +160,14 @@ export default function Profile() {
                 {(user.role === 'admin' || user.role === 'teacher') && (
                   <Link 
                     to={user.role === 'admin' ? '/admin' : '/teacher'}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-accent text-primary rounded-2xl text-sm font-bold uppercase tracking-widest transition-all hover:scale-105"
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-accent text-primary rounded-none text-sm font-bold uppercase tracking-widest transition-all hover:scale-105"
                   >
                     Администрация
                   </Link>
                 )}
                 <button 
                   onClick={handleLogout}
-                  className="flex items-center justify-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl text-sm font-bold uppercase tracking-widest transition-all"
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-none text-sm font-bold uppercase tracking-widest transition-all"
                 >
                   <LogOut size={18} />
                   Выйти
@@ -200,13 +200,13 @@ export default function Profile() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`mb-6 p-6 rounded-3xl border shadow-sm ${
+            className={`mb-6 p-6 rounded-none border shadow-sm ${
               application.status === 'pending' ? 'bg-amber-50 border-amber-200' : 
               application.status === 'approved' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
             }`}
           >
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+              <div className={`w-12 h-12 rounded-none flex items-center justify-center ${
                 application.status === 'pending' ? 'bg-amber-100 text-amber-600' : 
                 application.status === 'approved' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
               }`}>
@@ -227,7 +227,7 @@ export default function Profile() {
                       onClick={() => {
                         window.location.reload(); 
                       }}
-                      className="p-1.5 hover:bg-black/5 rounded-lg transition-colors"
+                      className="p-1.5 hover:bg-black/5 rounded-none transition-colors"
                       title="Обновить данные"
                     >
                       <History size={14} className={
@@ -267,9 +267,9 @@ export default function Profile() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: i * 0.1 }}
-              className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center"
+              className="bg-white p-4 rounded-none shadow-sm border border-slate-100 flex flex-col items-center text-center"
             >
-              <div className="mb-2 p-2 bg-slate-50 rounded-xl">{stat.icon}</div>
+              <div className="mb-2 p-2 bg-slate-50 rounded-none">{stat.icon}</div>
               <div className="text-xl font-black text-slate-800">{stat.value}</div>
               <div className="text-xs font-bold text-slate-400 uppercase tracking-tighter">{stat.label}</div>
             </motion.div>
@@ -278,9 +278,9 @@ export default function Profile() {
               <motion.div 
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center"
+                className="bg-white p-4 rounded-none shadow-sm border border-slate-100 flex flex-col items-center text-center"
               >
-                <div className="mb-2 p-2 bg-slate-50 rounded-xl"><Layers className="text-primary" /></div>
+                <div className="mb-2 p-2 bg-slate-50 rounded-none"><Layers className="text-primary" /></div>
                 <div className="text-xl font-black text-slate-800">{results.length > 0 ? results.length : '—'}</div>
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Курсы</div>
               </motion.div>
@@ -288,18 +288,18 @@ export default function Profile() {
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.1 }}
-                className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center"
+                className="bg-white p-4 rounded-none shadow-sm border border-slate-100 flex flex-col items-center text-center"
               >
-                <div className="mb-2 p-2 bg-slate-50 rounded-xl"><UserIcon className="text-accent" /></div>
+                <div className="mb-2 p-2 bg-slate-50 rounded-none"><UserIcon className="text-accent" /></div>
                 <div className="text-xl font-black text-slate-800">—</div>
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Ученики</div>
               </motion.div>
-              <div className="col-span-2 bg-white p-6 rounded-3xl border border-slate-100 flex items-center justify-between">
+              <div className="col-span-2 bg-white p-6 rounded-none border border-slate-100 flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-black text-primary uppercase tracking-tighter">Опыт преподавания</h3>
                   <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Профильный предмет: {getSubjectLabel((user as any).subject || 'general')}</p>
                 </div>
-                <div className="bg-green-50 px-4 py-2 rounded-2xl border border-green-100">
+                <div className="bg-green-50 px-4 py-2 rounded-none border border-green-100">
                   <span className="text-green-600 font-black text-[10px] uppercase tracking-widest">Проверен</span>
                 </div>
               </div>
@@ -309,7 +309,7 @@ export default function Profile() {
 
         {/* History */}
         {user.role !== 'teacher' && (
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden mb-8">
+          <div className="bg-white rounded-none shadow-sm border border-slate-100 overflow-hidden mb-8">
             <div className="p-6 border-b border-slate-50 flex items-center justify-between">
               <h2 className="text-xl font-bold flex items-center gap-2">
                 <History size={20} className="text-primary" />
@@ -321,7 +321,7 @@ export default function Profile() {
               {loading ? (
                 [...Array(3)].map((_, i) => (
                   <div key={i} className="p-6 animate-pulse flex items-center gap-4">
-                    <div className="w-12 h-12 bg-slate-100 rounded-xl" />
+                    <div className="w-12 h-12 bg-slate-100 rounded-none" />
                     <div className="flex-1 space-y-2">
                       <div className="h-4 bg-slate-100 rounded w-1/3" />
                       <div className="h-3 bg-slate-100 rounded w-1/4" />
@@ -331,7 +331,7 @@ export default function Profile() {
               ) : results.length > 0 ? (
                 results.map((res) => (
                   <div key={res.id} className="p-6 flex items-center gap-4 hover:bg-slate-50 transition-colors">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg
+                    <div className={`w-12 h-12 rounded-none flex items-center justify-center font-bold text-lg
                       ${(res.score / res.total_questions) >= 0.8 ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-600'}
                     `}>
                       {Math.round((res.score / res.total_questions) * 100)}%

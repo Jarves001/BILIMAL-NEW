@@ -8,8 +8,12 @@ const api = axios.create({
 api.interceptors.request.use(async (config) => {
   const user = auth.currentUser;
   if (user) {
-    const token = await user.getIdToken();
-    config.headers.Authorization = `Bearer ${token}`;
+    try {
+      const token = await user.getIdToken();
+      config.headers.Authorization = `Bearer ${token}`;
+    } catch (err) {
+      console.error('Failed to get Firebase token in interceptor:', err);
+    }
   }
   return config;
 });

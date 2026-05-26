@@ -642,14 +642,14 @@ export default function TeacherDashboard() {
         <div className="flex gap-3">
           <button 
             onClick={() => setIsAddingExam(true)}
-            className="bg-accent text-primary px-6 py-4 rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:scale-105 shadow-xl transition-all"
+            className="bg-accent text-primary px-6 py-4 rounded-none font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:scale-105 shadow-xl transition-all"
           >
             <Sparkles size={18} />
             Создать еженедельный экзамен
           </button>
           <button 
             onClick={() => setIsAddingCourse(true)}
-            className="bg-primary text-white px-6 py-4 rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-primary/90 shadow-xl transition-all"
+            className="bg-primary text-white px-6 py-4 rounded-none font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-primary/90 shadow-xl transition-all"
           >
             <Plus size={18} />
             Создать новый курс
@@ -692,7 +692,7 @@ export default function TeacherDashboard() {
             {exams.map(exam => (
               <div 
                 key={exam.id} 
-                className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col group"
+                className="bg-white rounded-none border border-slate-200 shadow-sm overflow-hidden flex flex-col group"
               >
                 <div className="h-32 bg-accent/5 flex items-center justify-center border-b border-slate-100">
                   <BookMarked className="text-accent/40" size={48} />
@@ -713,7 +713,7 @@ export default function TeacherDashboard() {
                   <div className="flex items-center justify-between">
                     <button 
                       onClick={(e) => handleDeleteExam(exam.id, e)}
-                      className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white transition-all shadow-sm"
+                      className="w-8 h-8 rounded-none bg-red-50 flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white transition-all shadow-sm"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -725,7 +725,7 @@ export default function TeacherDashboard() {
               </div>
             ))}
             {exams.length === 0 && (
-              <div className="col-span-full py-20 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+              <div className="col-span-full py-20 text-center bg-slate-50 rounded-none border-2 border-dashed border-slate-200">
                 <BookMarked className="mx-auto text-slate-200 mb-4" size={48} />
                 <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">У вас еще нет созданных экзаменов</p>
                 <button 
@@ -749,7 +749,7 @@ export default function TeacherDashboard() {
             {courses.map(course => (
               <div 
                 key={course.id} 
-                className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col group cursor-pointer"
+                className="bg-white rounded-none border border-slate-200 shadow-sm overflow-hidden flex flex-col group cursor-pointer"
                 onClick={() => setSelectedCourse(course)}
               >
                 <div className="h-32 bg-primary/5 flex items-center justify-center border-b border-slate-100 group-hover:bg-primary/10 transition-colors">
@@ -762,12 +762,12 @@ export default function TeacherDashboard() {
                     <div className="flex gap-2">
                        <button 
                          onClick={(e) => handleDeleteCourse(course.id, e)}
-                         className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white transition-all shadow-sm"
+                         className="w-8 h-8 rounded-none bg-red-50 flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white transition-all shadow-sm"
                        >
                          <Trash2 size={14} />
                        </button>
-                       <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400"><Video size={14} /></div>
-                       <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400"><FileText size={14} /></div>
+                       <div className="w-8 h-8 rounded-none bg-slate-50 flex items-center justify-center text-slate-400"><Video size={14} /></div>
+                       <div className="w-8 h-8 rounded-none bg-slate-50 flex items-center justify-center text-slate-400"><FileText size={14} /></div>
                     </div>
                     <span className="text-[10px] font-bold uppercase tracking-widest text-accent flex items-center gap-1">
                       Управление <ChevronRight size={14} />
@@ -801,14 +801,14 @@ export default function TeacherDashboard() {
                </button>
              </div>
              
-             <div className="bg-white p-8 rounded-3xl border border-slate-200 flex justify-between items-center">
+             <div className="bg-white p-8 rounded-none border border-slate-200 flex justify-between items-center">
                <div>
                  <h2 className="text-2xl font-black text-primary uppercase tracking-tighter">{selectedCourse.title}</h2>
                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Редактирование структуры курса</p>
                </div>
                <button 
                  onClick={() => setIsAddingLesson(true)}
-                 className="px-6 py-3 bg-accent text-primary rounded-xl font-black uppercase text-[10px] tracking-widest hover:scale-105 transition-all"
+                 className="px-6 py-3 bg-accent text-primary rounded-none font-black uppercase text-[10px] tracking-widest hover:scale-105 transition-all"
                >
                  + Шаг обучения
                </button>
@@ -816,8 +816,8 @@ export default function TeacherDashboard() {
 
              <div className="space-y-4">
                {lessons.map((lesson, idx) => (
-                 <div key={lesson.id} className="bg-white p-6 rounded-2xl border border-slate-100 flex items-center gap-6 group hover:border-accent/30 transition-all">
-                   <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center font-black text-slate-300 group-hover:bg-accent/10 group-hover:text-primary transition-all">
+                 <div key={lesson.id} className="bg-white p-6 rounded-none border border-slate-100 flex items-center gap-6 group hover:border-accent/30 transition-all">
+                   <div className="w-12 h-12 bg-slate-50 rounded-none flex items-center justify-center font-black text-slate-300 group-hover:bg-accent/10 group-hover:text-primary transition-all">
                      {idx + 1}
                    </div>
                    <div className="flex-1">
@@ -829,14 +829,14 @@ export default function TeacherDashboard() {
                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                      <button 
                        onClick={() => handleEditLesson(lesson)}
-                       className="p-3 bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-primary rounded-xl transition-all"
+                       className="p-3 bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-primary rounded-none transition-all"
                      >
                        <Pencil size={16}/>
                      </button>
-                     <button className="p-3 bg-slate-50 text-slate-400 hover:bg-slate-100 rounded-xl"><FileText size={16}/></button>
+                     <button className="p-3 bg-slate-50 text-slate-400 hover:bg-slate-100 rounded-none"><FileText size={16}/></button>
                      <button 
                         onClick={(e) => handleDeleteLesson(lesson.id, e)}
-                        className="p-3 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white rounded-xl transition-all"
+                        className="p-3 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white rounded-none transition-all"
                       >
                         <Trash2 size={16}/>
                       </button>
@@ -851,7 +851,7 @@ export default function TeacherDashboard() {
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="bg-white border border-slate-200 rounded-3xl overflow-hidden h-[600px] flex shadow-sm"
+            className="bg-white border border-slate-200 rounded-none overflow-hidden h-[600px] flex shadow-sm"
           >
             {/* Sidebar with students */}
             <div className="w-80 border-r border-slate-100 flex flex-col bg-slate-50/30">
@@ -866,7 +866,7 @@ export default function TeacherDashboard() {
                       onClick={() => setSelectedChatUser(student)}
                       className={`w-full p-4 flex items-center gap-3 hover:bg-slate-50 transition-colors border-b border-slate-50/50 ${selectedChatUser?.id === student.id ? 'bg-accent/10 border-l-4 border-l-accent' : ''}`}
                     >
-                      <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center font-bold text-primary italic shrink-0">
+                      <div className="w-10 h-10 rounded-none bg-primary/5 flex items-center justify-center font-bold text-primary italic shrink-0">
                         {student.name?.charAt(0)}
                       </div>
                       <div className="text-left overflow-hidden">
@@ -889,7 +889,7 @@ export default function TeacherDashboard() {
                 <>
                   <div className="p-6 bg-white border-b border-slate-100 flex items-center justify-between shadow-sm z-10">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center font-bold text-primary italic">
+                      <div className="w-10 h-10 rounded-none bg-accent/20 flex items-center justify-center font-bold text-primary italic">
                         {selectedChatUser.name?.charAt(0)}
                       </div>
                       <div>
@@ -908,10 +908,10 @@ export default function TeacherDashboard() {
                         const isMe = msg.senderId === user?.id;
                         return (
                           <div key={msg.id || i} className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
-                            <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center font-bold text-xs italic ${isMe ? 'bg-accent text-primary' : 'bg-primary/10 text-primary'}`}>
+                            <div className={`w-8 h-8 rounded-none shrink-0 flex items-center justify-center font-bold text-xs italic ${isMe ? 'bg-accent text-primary' : 'bg-primary/10 text-primary'}`}>
                               {isMe ? 'T' : selectedChatUser.name?.charAt(0)}
                             </div>
-                            <div className={`p-4 rounded-2xl max-w-[80%] shadow-sm ${
+                            <div className={`p-4 rounded-none max-w-[80%] shadow-sm ${
                               isMe ? 'bg-primary text-white rounded-tr-none' : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none'
                             }`}>
                               <p className="text-sm leading-relaxed">{msg.text}</p>
@@ -937,11 +937,11 @@ export default function TeacherDashboard() {
                         value={newChatMessage}
                         onChange={(e) => setNewChatMessage(e.target.value)}
                         placeholder="Напишите сообщение..."
-                        className="w-full bg-slate-50 pl-5 pr-20 py-4 rounded-2xl border border-slate-100 focus:bg-white focus:ring-2 focus:ring-accent outline-none text-sm transition-all"
+                        className="w-full bg-slate-50 pl-5 pr-20 py-4 rounded-none border border-slate-100 focus:bg-white focus:ring-2 focus:ring-accent outline-none text-sm transition-all"
                       />
                       <button 
                         type="submit"
-                        className="absolute right-2 top-2 bottom-2 bg-primary text-white px-5 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-primary/90 transition-transform active:scale-95"
+                        className="absolute right-2 top-2 bottom-2 bg-primary text-white px-5 rounded-none font-bold text-[10px] uppercase tracking-widest hover:bg-primary/90 transition-transform active:scale-95"
                       >
                         <Send size={14} />
                       </button>
@@ -950,7 +950,7 @@ export default function TeacherDashboard() {
                 </>
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-12 bg-slate-50/20">
-                  <div className="w-20 h-20 rounded-3xl bg-slate-100 flex items-center justify-center text-slate-300 mb-6">
+                  <div className="w-20 h-20 rounded-none bg-slate-100 flex items-center justify-center text-slate-300 mb-6">
                     <Send size={32} />
                   </div>
                   <h3 className="font-bold text-primary mb-2">Чат с учениками</h3>
@@ -969,7 +969,7 @@ export default function TeacherDashboard() {
             className="space-y-6"
           >
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-               <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
+               <div className="bg-white p-8 rounded-none border border-slate-200 shadow-sm relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
                     <Users size={80} />
                   </div>
@@ -977,7 +977,7 @@ export default function TeacherDashboard() {
                   <p className="text-4xl font-black text-primary tracking-tighter">{stats.totalStudents}</p>
                   <span className="text-[10px] font-black text-green-500 bg-green-50 px-2 py-0.5 rounded mt-4 inline-block tracking-tighter cursor-default">+12% с прошлого месяца</span>
                </div>
-               <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
+               <div className="bg-white p-8 rounded-none border border-slate-200 shadow-sm relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
                     <BarChart3 size={80} />
                   </div>
@@ -987,7 +987,7 @@ export default function TeacherDashboard() {
                     <div className="h-full bg-accent" style={{ width: `${stats.testSuccess}%` }}></div>
                   </div>
                </div>
-               <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden group">
+               <div className="bg-white p-8 rounded-none border border-slate-200 shadow-sm relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
                     <Plus size={80} className="rotate-45" />
                   </div>
@@ -997,7 +997,7 @@ export default function TeacherDashboard() {
                </div>
             </div>
 
-            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="bg-white p-8 rounded-none border border-slate-200 shadow-sm">
                <h3 className="font-bold text-primary mb-8 text-sm uppercase tracking-widest">Производительность по курсам</h3>
                <div className="space-y-6">
                  {stats.courseStats.length > 0 ? stats.courseStats.map((course, i) => (
@@ -1033,7 +1033,7 @@ export default function TeacherDashboard() {
             key="students-list"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm"
+            className="bg-white rounded-none border border-slate-200 overflow-hidden shadow-sm"
           >
             <table className="w-full text-left">
               <thead>
@@ -1053,7 +1053,7 @@ export default function TeacherDashboard() {
                     <tr key={s.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center font-bold text-primary italic">
+                          <div className="w-10 h-10 bg-primary/5 rounded-none flex items-center justify-center font-bold text-primary italic">
                             {s.name?.charAt(0)}
                           </div>
                           <p className="font-bold text-sm text-primary">{s.name}</p>
@@ -1077,7 +1077,7 @@ export default function TeacherDashboard() {
                       <td className="px-6 py-5">
                          <button 
                            onClick={() => setSelectedStudent(s)}
-                           className="text-[10px] bg-slate-100 px-3 py-1.5 rounded-lg font-bold uppercase tracking-widest text-slate-500 hover:bg-primary hover:text-white transition-all"
+                           className="text-[10px] bg-slate-100 px-3 py-1.5 rounded-none font-bold uppercase tracking-widest text-slate-500 hover:bg-primary hover:text-white transition-all"
                          >
                            Детали
                          </button>
@@ -1101,7 +1101,7 @@ export default function TeacherDashboard() {
 
       {isAddingCourse && (
         <div className="fixed inset-0 bg-primary/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-lg rounded-3xl p-8 shadow-2xl relative">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-lg rounded-none p-8 shadow-2xl relative">
             <button onClick={() => setIsAddingCourse(false)} className="absolute top-6 right-6 text-slate-300 hover:text-primary"><X size={24} /></button>
             <h2 className="text-2xl font-black text-primary mb-2 uppercase tracking-tighter">Новый курс</h2>
             <p className="text-[10px] text-accent font-black uppercase tracking-[0.2em] mb-6">
@@ -1110,21 +1110,21 @@ export default function TeacherDashboard() {
             <form onSubmit={handleCreateCourse} className="space-y-6">
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Название</label>
-                <input required value={newCourse.title} onChange={e => setNewCourse({...newCourse, title: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-accent outline-none font-medium" />
+                <input required value={newCourse.title} onChange={e => setNewCourse({...newCourse, title: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border-none rounded-none focus:ring-2 focus:ring-accent outline-none font-medium" />
               </div>
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Описание</label>
-                <textarea required rows={3} value={newCourse.description} onChange={e => setNewCourse({...newCourse, description: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-accent outline-none font-medium" />
+                <textarea required rows={3} value={newCourse.description} onChange={e => setNewCourse({...newCourse, description: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border-none rounded-none focus:ring-2 focus:ring-accent outline-none font-medium" />
               </div>
               <div className="flex gap-4">
                 <button 
                   type="button" 
                   onClick={() => setIsAddingCourse(false)}
-                  className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-slate-200 transition-all"
+                  className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-none font-bold uppercase tracking-widest text-xs hover:bg-slate-200 transition-all"
                 >
                   Отмена
                 </button>
-                <button type="submit" className="flex-[2] py-4 bg-primary text-white rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-primary/90 shadow-lg shadow-primary/20">
+                <button type="submit" className="flex-[2] py-4 bg-primary text-white rounded-none font-bold uppercase tracking-widest text-xs hover:bg-primary/90 shadow-lg shadow-primary/20">
                   Создать курс
                 </button>
               </div>
@@ -1135,7 +1135,7 @@ export default function TeacherDashboard() {
 
       {isAddingLesson && (
         <div className="fixed inset-0 bg-primary/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-lg rounded-3xl p-8 shadow-2xl relative">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-lg rounded-none p-8 shadow-2xl relative">
             <button onClick={() => { setIsAddingLesson(false); setEditingLessonId(null); }} className="absolute top-6 right-6 text-slate-300 hover:text-primary"><X size={24} /></button>
             <h2 className="text-2xl font-black text-primary mb-6 uppercase tracking-tighter">
               {editingLessonId ? 'Изменить шаг обучения' : 'Новый шаг обучения'}
@@ -1158,11 +1158,11 @@ export default function TeacherDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Заголовок урока</label>
-                  <input required value={newLesson.title} onChange={e => setNewLesson({...newLesson, title: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-accent outline-none font-medium" />
+                  <input required value={newLesson.title} onChange={e => setNewLesson({...newLesson, title: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border-none rounded-none focus:ring-2 focus:ring-accent outline-none font-medium" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Ссылка на видео</label>
-                  <input required value={newLesson.videoUrl} onChange={e => setNewLesson({...newLesson, videoUrl: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-accent outline-none font-medium" />
+                  <input required value={newLesson.videoUrl} onChange={e => setNewLesson({...newLesson, videoUrl: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border-none rounded-none focus:ring-2 focus:ring-accent outline-none font-medium" />
                 </div>
               </div>
 
@@ -1173,21 +1173,21 @@ export default function TeacherDashboard() {
                     <button 
                       type="button" 
                       onClick={() => handleAddTask('choice')} 
-                      className="py-3 px-4 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:bg-accent/10 hover:text-primary hover:border-accent/20 transition-all flex items-center justify-center gap-2"
+                      className="py-3 px-4 bg-slate-50 border border-slate-100 rounded-none text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:bg-accent/10 hover:text-primary hover:border-accent/20 transition-all flex items-center justify-center gap-2"
                     >
                       <div className="w-5 h-5 rounded-full border-2 border-current flex items-center justify-center text-[8px]">1</div> Один ответ
                     </button>
                     <button 
                       type="button" 
                       onClick={() => handleAddTask('multi_choice')} 
-                      className="py-3 px-4 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:bg-accent/10 hover:text-primary hover:border-accent/20 transition-all flex items-center justify-center gap-2"
+                      className="py-3 px-4 bg-slate-50 border border-slate-100 rounded-none text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:bg-accent/10 hover:text-primary hover:border-accent/20 transition-all flex items-center justify-center gap-2"
                     >
                       <div className="w-5 h-5 rounded border-2 border-current flex items-center justify-center text-[8px]">✓</div> Неск. ответов
                     </button>
                     <button 
                       type="button" 
                       onClick={() => handleAddTask('open')} 
-                      className="py-3 px-4 bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:bg-accent/10 hover:text-primary hover:border-accent/20 transition-all flex items-center justify-center gap-2"
+                      className="py-3 px-4 bg-slate-50 border border-slate-100 rounded-none text-[10px] font-bold text-slate-500 uppercase tracking-widest hover:bg-accent/10 hover:text-primary hover:border-accent/20 transition-all flex items-center justify-center gap-2"
                     >
                       <div className="w-5 h-5 flex items-center justify-center text-[10px]">?</div> Открытый ответ
                     </button>
@@ -1201,7 +1201,7 @@ export default function TeacherDashboard() {
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, scale: 0.9 }}
-                      className="p-5 bg-slate-50 rounded-2xl space-y-4 border border-slate-100 relative overflow-hidden"
+                      className="p-5 bg-slate-50 rounded-none space-y-4 border border-slate-100 relative overflow-hidden"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -1225,7 +1225,7 @@ export default function TeacherDashboard() {
       <div className="space-y-4">
         <input 
           placeholder="Введите вопрос..." 
-          className="w-full px-4 py-3 bg-white border border-slate-100 rounded-xl outline-none focus:ring-1 focus:ring-accent text-sm font-bold text-primary placeholder:font-normal"
+          className="w-full px-4 py-3 bg-white border border-slate-100 rounded-none outline-none focus:ring-1 focus:ring-accent text-sm font-bold text-primary placeholder:font-normal"
           value={task.question}
           onChange={e => updateTask(idx, 'question', e.target.value)}
         />
@@ -1251,12 +1251,12 @@ export default function TeacherDashboard() {
               </div>
               <input 
                 placeholder="Ссылка на изображение или вставьте картинку (Ctrl+V)..." 
-                className="w-full pl-11 pr-4 py-3 bg-white border border-slate-100 rounded-xl outline-none focus:ring-1 focus:ring-accent text-[10px] font-medium text-slate-500"
+                className="w-full pl-11 pr-4 py-3 bg-white border border-slate-100 rounded-none outline-none focus:ring-1 focus:ring-accent text-[10px] font-medium text-slate-500"
                 value={task.image_url?.startsWith('data:image') ? 'Изображение загружено' : (task.image_url || '')}
                 onChange={e => updateTask(idx, 'image_url', e.target.value)}
               />
             </div>
-            <label className="cursor-pointer flex items-center justify-center w-12 h-12 bg-white border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors text-slate-400 hover:text-accent">
+            <label className="cursor-pointer flex items-center justify-center w-12 h-12 bg-white border border-slate-100 rounded-none hover:bg-slate-50 transition-colors text-slate-400 hover:text-accent">
               <input 
                 type="file" 
                 accept="image/*" 
@@ -1275,7 +1275,7 @@ export default function TeacherDashboard() {
           
           {task.image_url && (
             <div className="mt-2 relative inline-block group/preview">
-              <div className="w-32 h-32 rounded-2xl overflow-hidden border-2 border-white shadow-md">
+              <div className="w-32 h-32 rounded-none overflow-hidden border-2 border-white shadow-md">
                 <img src={task.image_url} alt="Preview" className="w-full h-full object-cover" />
               </div>
               <button 
@@ -1298,7 +1298,7 @@ export default function TeacherDashboard() {
                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-300">{opt}</span>
                                  <input 
                                    placeholder={`Вариант ${opt}`}
-                                   className="w-full pl-8 pr-3 py-2 bg-white border border-slate-100 rounded-lg outline-none text-xs focus:border-accent/30"
+                                   className="w-full pl-8 pr-3 py-2 bg-white border border-slate-100 rounded-none outline-none text-xs focus:border-accent/30"
                                    value={(task as any)[`option_${optLetter}`]}
                                    onChange={e => updateTask(idx, `option_${optLetter}`, e.target.value)}
                                  />
@@ -1307,11 +1307,11 @@ export default function TeacherDashboard() {
                            })}
                         </div>
                       ) : (
-                        <div className="p-4 bg-primary/5 rounded-xl border border-dashed border-primary/20">
+                        <div className="p-4 bg-primary/5 rounded-none border border-dashed border-primary/20">
                           <label className="block text-[9px] font-black text-primary uppercase tracking-[0.2em] mb-2 opacity-60">Точный правильный ответ</label>
                           <input 
                             placeholder="Введите число, дробь или текст..." 
-                            className="w-full px-4 py-3 bg-white border border-slate-100 rounded-xl outline-none focus:ring-1 focus:ring-accent text-sm font-mono text-primary font-bold"
+                            className="w-full px-4 py-3 bg-white border border-slate-100 rounded-none outline-none focus:ring-1 focus:ring-accent text-sm font-mono text-primary font-bold"
                             value={task.correct_answer}
                             onChange={e => updateTask(idx, 'correct_answer', e.target.value)}
                           />
@@ -1322,13 +1322,13 @@ export default function TeacherDashboard() {
                         <textarea 
                           placeholder="Объяснение решения (появится после ответа)..." 
                           rows={2}
-                          className="w-full px-4 py-3 bg-white border border-slate-100 rounded-xl outline-none focus:ring-1 focus:ring-accent text-[10px] font-medium text-slate-500 italic"
+                          className="w-full px-4 py-3 bg-white border border-slate-100 rounded-none outline-none focus:ring-1 focus:ring-accent text-[10px] font-medium text-slate-500 italic"
                           value={task.explanation || ''}
                           onChange={e => updateTask(idx, 'explanation', e.target.value)}
                         />
 
                         {(task.type === 'choice' || task.type === 'multi_choice' || !task.type) && (
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-white/50 p-3 rounded-xl border border-slate-100/50">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-white/50 p-3 rounded-none border border-slate-100/50">
                             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest shrink-0">
                               {task.type === 'multi_choice' ? 'Прав. ответы:' : 'Прав. ответ:'}
                             </label>
@@ -1353,7 +1353,7 @@ export default function TeacherDashboard() {
                                          updateTask(idx, 'correct_answer', opt);
                                        }
                                      }}
-                                     className={`w-9 h-9 rounded-xl font-black text-xs transition-all shadow-sm ${isSelected ? 'bg-primary text-white scale-110 shadow-lg shadow-primary/20' : 'bg-white text-slate-300 border border-slate-100 hover:border-slate-300 hover:text-slate-500'}`}
+                                     className={`w-9 h-9 rounded-none font-black text-xs transition-all shadow-sm ${isSelected ? 'bg-primary text-white scale-110 shadow-lg shadow-primary/20' : 'bg-white text-slate-300 border border-slate-100 hover:border-slate-300 hover:text-slate-500'}`}
                                    >
                                      {opt}
                                    </button>
@@ -1372,11 +1372,11 @@ export default function TeacherDashboard() {
                 <button 
                   type="button" 
                   onClick={() => { setIsAddingLesson(false); setEditingLessonId(null); }}
-                  className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-slate-200 transition-all"
+                  className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-none font-bold uppercase tracking-widest text-xs hover:bg-slate-200 transition-all"
                 >
                   Отмена
                 </button>
-                <button type="submit" className="flex-[2] py-4 bg-primary text-white rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-primary/90 flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+                <button type="submit" className="flex-[2] py-4 bg-primary text-white rounded-none font-bold uppercase tracking-widest text-xs hover:bg-primary/90 flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
                   <Send size={16} /> 
                   {editingLessonId ? 'Сохранить изменения' : 'Опубликовать урок'}
                 </button>
@@ -1414,7 +1414,7 @@ export default function TeacherDashboard() {
                     value={newExam.title}
                     onChange={(e) => setNewExam({...newExam, title: e.target.value})}
                     placeholder="Напр: Итоговый тест по математике"
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 font-bold text-primary placeholder:text-slate-300 focus:border-accent focus:outline-none transition-all"
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-none px-6 py-4 font-bold text-primary placeholder:text-slate-300 focus:border-accent focus:outline-none transition-all"
                   />
                 </div>
                 <div>
@@ -1423,14 +1423,14 @@ export default function TeacherDashboard() {
                     type="number" 
                     value={newExam.duration_minutes}
                     onChange={(e) => setNewExam({...newExam, duration_minutes: parseInt(e.target.value)})}
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 font-bold text-primary focus:border-accent focus:outline-none transition-all"
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-none px-6 py-4 font-bold text-primary focus:border-accent focus:outline-none transition-all"
                   />
                 </div>
               </div>
 
               <div className="bg-primary/5 p-8 rounded-[30px] border border-primary/10">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center text-primary">
+                  <div className="w-10 h-10 bg-accent rounded-none flex items-center justify-center text-primary">
                     <Sparkles size={20} />
                   </div>
                   <div>
@@ -1446,13 +1446,13 @@ export default function TeacherDashboard() {
                   value={rawExamText}
                   onChange={(e) => setRawExamText(e.target.value)}
                   placeholder="Вставьте сюда вопросы (напр: 1. Какой корень из 16? A) 2 B) 4 C) 8 D) 16 Ответ: B)"
-                  className="w-full h-48 bg-white border-2 border-primary/5 rounded-2xl p-6 font-medium text-slate-600 focus:border-accent focus:outline-none transition-all resize-none mb-4"
+                  className="w-full h-48 bg-white border-2 border-primary/5 rounded-none p-6 font-medium text-slate-600 focus:border-accent focus:outline-none transition-all resize-none mb-4"
                 />
 
                 <button
                   onClick={handleParseExamText}
                   disabled={isParsingText || !rawExamText.trim()}
-                  className="w-full py-4 bg-primary text-white rounded-2xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-primary/90 disabled:opacity-50 transition-all shadow-lg"
+                  className="w-full py-4 bg-primary text-white rounded-none font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-primary/90 disabled:opacity-50 transition-all shadow-lg"
                 >
                   {isParsingText ? (
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -1478,7 +1478,7 @@ export default function TeacherDashboard() {
                   </div>
                   <div className="max-h-60 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
                     {newExam.questions.map((q: any, idx: number) => (
-                      <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-start gap-4">
+                      <div key={idx} className="p-4 bg-slate-50 rounded-none border border-slate-100 flex items-start gap-4">
                         <div className="bg-primary text-white w-6 h-6 rounded flex items-center justify-center text-[10px] font-black shrink-0">{idx + 1}</div>
                         <div className="flex-1">
                           <p className="font-bold text-primary text-sm mb-1">{q.question}</p>
@@ -1505,7 +1505,7 @@ export default function TeacherDashboard() {
                 <button 
                   onClick={handleCreateExam}
                   disabled={newExam.questions.length === 0}
-                  className="bg-accent text-primary px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 shadow-xl transition-all"
+                  className="bg-accent text-primary px-10 py-4 rounded-none font-black uppercase tracking-widest text-xs hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 shadow-xl transition-all"
                 >
                   Сохранить экзамен
                 </button>
@@ -1517,10 +1517,10 @@ export default function TeacherDashboard() {
 
       {selectedStudent && (
         <div className="fixed inset-0 bg-primary/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-2xl rounded-3xl p-8 shadow-2xl relative max-h-[90vh] overflow-hidden flex flex-col">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white w-full max-w-2xl rounded-none p-8 shadow-2xl relative max-h-[90vh] overflow-hidden flex flex-col">
             <button onClick={() => setSelectedStudent(null)} className="absolute top-6 right-6 text-slate-300 hover:text-primary"><X size={24} /></button>
             <div className="flex items-center gap-4 mb-8">
-              <div className="w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center font-bold text-2xl text-primary italic">
+              <div className="w-16 h-16 bg-accent/20 rounded-none flex items-center justify-center font-bold text-2xl text-primary italic">
                 {selectedStudent.name?.charAt(0)}
               </div>
               <div>
@@ -1533,7 +1533,7 @@ export default function TeacherDashboard() {
               <h3 className="text-xs font-black text-primary uppercase tracking-widest mb-2">История прохождения тестов</h3>
               {selectedStudent.results && selectedStudent.results.length > 0 ? (
                 selectedStudent.results.sort((a: any, b: any) => (b.completed_at?.seconds || 0) - (a.completed_at?.seconds || 0)).map((res: any, idx: number) => (
-                  <div key={res.id || idx} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-accent/30 transition-all">
+                  <div key={res.id || idx} className="p-5 bg-slate-50 rounded-none border border-slate-100 group hover:border-accent/30 transition-all">
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <p className="text-[10px] text-accent font-black uppercase tracking-widest mb-1">Урок</p>
@@ -1571,7 +1571,7 @@ export default function TeacherDashboard() {
 
             <button 
               onClick={() => setSelectedStudent(null)}
-              className="mt-8 w-full py-4 bg-primary text-white rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-primary/90 transition-all"
+              className="mt-8 w-full py-4 bg-primary text-white rounded-none font-bold uppercase tracking-widest text-xs hover:bg-primary/90 transition-all"
             >
               Закрыть
             </button>
