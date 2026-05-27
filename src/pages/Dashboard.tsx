@@ -19,6 +19,7 @@ interface Course {
 export default function Dashboard() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [exams, setExams] = useState<any[]>([]);
+  const [examResults, setExamResults] = useState<any[]>([]);
   const { user } = useAuth();
   const isSubscribed = user?.subscription === 'active' || user?.role === 'admin' || user?.role === 'teacher';
   const [searchParams] = useSearchParams();
@@ -192,7 +193,19 @@ export default function Dashboard() {
       }
     };
 
+    const fetchExamResults = async () => {
+      if (!user?.id) return;
+      try {
+        const q = query(collection(db, 'exam_results'), where('user_id', '==', user.id), orderBy('completed_at', 'desc'));
+        const snap = await getDocs(q);
+        setExamResults(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (err) {
+        console.error('Failed to fetch exam results:', err);
+      }
+    };
+
     fetchExams();
+    fetchExamResults();
   }, [user]);
 
   const filteredCourses = useMemo(() => {
@@ -212,39 +225,71 @@ export default function Dashboard() {
     return getSubjectLabel(subjectFilter);
   };
 
+  const passedExamIds = useMemo(() => new Set(examResults.map(r => r.exam_id)), [examResults]);
+  const availableExams = useMemo(() => exams.filter(e => !passedExamIds.has(e.id)), [exams, passedExamIds]);
+
+  const [hideAppBanner, setHideAppBanner] = useState(false);
+
   return (
     <div className="space-y-6 pb-20 md:pb-0">
       {/* Application Status */}
-      {application && application.status !== 'rejected' && (
-        <div className={`p-6 rounded-none border flex items-center gap-4 ${
-          application.status === 'pending' ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'
+      {application && !hideAppBanner && (
+        <div className={`p-6 rounded-none border flex items-start sm:items-center gap-4 relative ${
+          application.status === 'pending' ? 'bg-amber-50 border-amber-200' : 
+          application.status === 'rejected' ? 'bg-red-50 border-red-200' :
+          'bg-green-50 border-green-200'
         }`}>
-          <div className={`w-12 h-12 rounded-none flex items-center justify-center ${
-            application.status === 'pending' ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'
+          {application.status === 'rejected' && (
+             <button onClick={() => setHideAppBanner(true)} className="absolute top-4 right-4 text-red-400 hover:text-red-600 transition-colors">
+               <X size={20} />
+             </button>
+          )}
+          <div className={`w-12 h-12 shrink-0 rounded-none flex items-center justify-center ${
+            application.status === 'pending' ? 'bg-amber-100 text-amber-600' : 
+            application.status === 'rejected' ? 'bg-red-100 text-red-600' :
+            'bg-green-100 text-green-600'
           }`}>
-            {application.status === 'pending' ? <Clock size={24} /> : <CheckCircle size={24} />}
+            {application.status === 'pending' ? <Clock size={24} /> : 
+             application.status === 'rejected' ? <X size={24} /> : 
+             <CheckCircle size={24} />}
           </div>
-          <div className="flex-1">
+          <div className="flex-1 pr-8 sm:pr-0">
             <h4 className={`font-black text-sm uppercase tracking-tight ${
-              application.status === 'pending' ? 'text-amber-800' : 'text-green-800'
+              application.status === 'pending' ? 'text-amber-800' : 
+              application.status === 'rejected' ? 'text-red-800' :
+              'text-green-800'
             }`}>
-              {application.status === 'pending' ? 'Заявка на роль учителя в обработке' : 'Принято, вы стали учителем!'}
+              {application.status === 'pending' ? 'Заявка на роль учителя в обработке' : 
+               application.status === 'rejected' ? 'Заявка отклонена' :
+               'Принято, вы стали учителем!'}
             </h4>
             <p className={`text-xs mt-1 ${
-              application.status === 'pending' ? 'text-amber-600' : 'text-green-600'
+              application.status === 'pending' ? 'text-amber-600' : 
+              application.status === 'rejected' ? 'text-red-600' :
+              'text-green-600'
             }`}>
               {application.status === 'pending' 
-                ? 'Ваша заявка проверяется администрацией. Обычно это занимает от 1 до 3 рабочих дней.' 
+                ? 'Ваша заявка проверяется администрацией. Обычно это занимает от 1 до 3 рабочих дней.' :
+               application.status === 'rejected'
+                ? 'К сожалению, ваша заявка была отклонена модератором. Вы можете подать новую анкету или обратиться в поддержку.' 
                 : 'Подробнее уточнения вам напишут с администрации и номер для связи 77474193512'}
             </p>
           </div>
           {application.status === 'approved' && user?.role !== 'teacher' && (
              <button 
                onClick={() => window.location.reload()}
-               className="bg-green-600 text-white px-4 py-2 rounded-none text-[10px] font-bold uppercase tracking-widest"
+               className="bg-green-600 text-white px-4 py-2 rounded-none text-[10px] font-bold uppercase tracking-widest mt-4 sm:mt-0"
              >
                Обновить роль
              </button>
+          )}
+          {application.status === 'rejected' && (
+             <Link 
+               to="/apply-teacher"
+               className="bg-red-600 text-white px-4 py-2 rounded-none text-[10px] font-bold uppercase tracking-widest mt-4 sm:mt-0 whitespace-nowrap"
+             >
+               Отправить заново
+             </Link>
           )}
         </div>
       )}
@@ -382,7 +427,7 @@ export default function Dashboard() {
                   </div>
                 </div>
               )}
-              {exams.length > 0 ? exams.map(exam => (
+              {availableExams.length > 0 ? availableExams.map(exam => (
                 <div key={exam.id} className={`bg-white p-6 hover:bg-slate-50 transition-all group flex flex-col justify-between ${!isSubscribed ? 'opacity-40' : ''}`}>
                   <div>
                     <h4 className="font-black text-primary leading-tight mb-2 group-hover:text-accent transition-colors">{exam.title}</h4>
@@ -406,11 +451,42 @@ export default function Dashboard() {
                 </div>
               )) : (
                 <div className="bg-white p-12 text-center text-slate-300 col-span-2">
-                   <p className="text-[10px] font-bold uppercase tracking-widest">Экзамены пока недоступны</p>
+                   <p className="text-[10px] font-bold uppercase tracking-widest">Все доступные экзамены сданы или пока недоступны</p>
                 </div>
               )}
             </div>
           </div>
+
+          {/* Exam History */}
+          {examResults.length > 0 && (
+            <div className="bg-white border shadow-sm mb-8">
+              <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+                <h3 className="text-sm font-bold uppercase tracking-tight text-primary flex items-center gap-2">
+                  <Trophy size={16} className="text-green-500" />
+                  История пройденных экзаменов
+                </h3>
+              </div>
+              <div className="p-0 divide-y divide-slate-100">
+                {examResults.map(res => {
+                  const percent = Math.round((res.score / res.total_questions) * 100) || 0;
+                  return (
+                    <div key={res.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                       <div>
+                         <p className="font-bold text-primary">{exams.find(e => e.id === res.exam_id)?.title || 'Неизвестный экзамен'}</p>
+                         <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">
+                           Сдан: {res.completed_at?.toDate ? res.completed_at.toDate().toLocaleDateString('ru-RU') : 'Недавно'}
+                         </p>
+                       </div>
+                       <div className="text-right">
+                         <div className="text-lg font-black text-primary">{percent}%</div>
+                         <div className="text-[10px] font-bold text-slate-400 uppercase">{res.score} из {res.total_questions} верных</div>
+                       </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Main Course Listing */}
           <div id="courses" className="bg-white border shadow-sm">
@@ -463,7 +539,7 @@ export default function Dashboard() {
               <h3 className="text-sm font-bold uppercase tracking-tight text-primary">Ближайшие цели</h3>
             </div>
             <div className="p-0">
-              {exams.length > 0 ? exams.slice(0, 3).map((exam, idx) => (
+              {availableExams.length > 0 ? availableExams.slice(0, 3).map((exam, idx) => (
                 <Link to={`/exam/${exam.id}`} key={exam.id} className="block p-4 border-b hover:bg-slate-50 transition-colors">
                   <div className="flex items-center justify-between">
                     {idx === 0 ? (

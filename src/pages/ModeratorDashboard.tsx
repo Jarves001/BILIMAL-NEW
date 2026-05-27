@@ -91,26 +91,28 @@ export default function ModeratorDashboard() {
 
   const handleApproveApp = async (id: string, email: string) => {
     try {
+      setApps(prev => prev.filter(app => app.id !== id));
       await updateDoc(doc(db, "teacher_applications", id), {
         status: "pending_admin",
       });
       alert(
         `Анкета переведена администратору. Можете связаться с кандидатом по: ${email}`,
       );
-      fetchData();
     } catch (err) {
       alert("Ошибка!");
+      fetchData(); // rollback
     }
   };
 
   const handleRejectApp = async (id: string) => {
     try {
+      setApps(prev => prev.filter(app => app.id !== id));
       await updateDoc(doc(db, "teacher_applications", id), {
         status: "rejected",
       });
-      fetchData();
     } catch (err) {
       alert("Ошибка!");
+      fetchData(); // rollback
     }
   };
 
@@ -614,14 +616,27 @@ export default function ModeratorDashboard() {
                         </span>
                       </div>
 
-                      <div className="bg-slate-50 rounded-lg p-3 mb-6 border border-slate-100">
+                      <div className="bg-slate-50 rounded-lg p-3 mb-6 border border-slate-100 relative group/curator">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
                           Куратор
                         </p>
-                        <p className="text-sm font-medium text-slate-700">
-                          {curators.find((c) => c.id === group.curator_id)
-                            ?.name || "Не назначен"}
-                        </p>
+                        <select 
+                          className="w-full bg-transparent text-sm font-bold text-primary outline-none appearance-none cursor-pointer"
+                          value={group.curator_id || ''}
+                          onChange={async (e) => {
+                            try {
+                               await updateDoc(doc(db, "groups", group.id), { curator_id: e.target.value });
+                               fetchData(); // or update local state
+                            } catch (err) {
+                               alert("Ошибка при смене куратора");
+                            }
+                          }}
+                        >
+                          <option value="">Не назначен</option>
+                          {curators.map((c) => (
+                             <option key={c.id} value={c.id}>{c.name || c.email}</option>
+                          ))}
+                        </select>
                       </div>
 
                       <div className="mb-6 flex-grow">
