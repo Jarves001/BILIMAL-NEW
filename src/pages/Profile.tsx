@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { auth, db } from '../lib/firebase';
 import { signOut } from 'firebase/auth';
-import { collection, query, where, getDocs, orderBy, limit, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit, doc, getDoc, addDoc, deleteDoc } from 'firebase/firestore';
 import { getSubjectLabel } from '../constants';
 import { 
   User as UserIcon, 
@@ -17,7 +17,10 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  LogOut
+  LogOut,
+  Target,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -39,6 +42,8 @@ export default function Profile() {
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(true);
   const [application, setApplication] = useState<any>(null);
+  const [goals, setGoals] = useState<any[]>([]);
+  const [newGoal, setNewGoal] = useState('');
   const [stats, setStats] = useState({
     totalScore: 0,
     lessonsCompleted: 0,
@@ -102,6 +107,15 @@ export default function Profile() {
         if (!appSnap.empty) {
           setApplication({ id: appSnap.docs[0].id, ...appSnap.docs[0].data() });
         }
+
+        // Fetch Goals
+        const goalsQ = query(
+          collection(db, 'goals'),
+          where('user_id', '==', userData.id),
+          orderBy('created_at', 'desc')
+        );
+        const goalsSnap = await getDocs(goalsQ);
+        setGoals(goalsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       } catch (err) {
         console.error('Failed to fetch profile data:', err);
       } finally {
@@ -120,6 +134,31 @@ export default function Profile() {
     }
   };
 
+  const handleCreateGoal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGoal.trim() || !user?.id) return;
+    try {
+      const gRef = await addDoc(collection(db, 'goals'), {
+        user_id: user.id,
+        title: newGoal.trim(),
+        created_at: new Date()
+      });
+      setGoals([{ id: gRef.id, title: newGoal.trim(), created_at: { toDate: () => new Date() } }, ...goals]);
+      setNewGoal('');
+    } catch (err) {
+      console.error('Failed to create goal:', err);
+    }
+  };
+
+  const handleDeleteGoal = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'goals', id));
+      setGoals(goals.filter(g => g.id !== id));
+    } catch (err) {
+      console.error('Failed to delete goal:', err);
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -131,7 +170,7 @@ export default function Profile() {
             <div className="w-24 h-24 bg-accent rounded-full flex items-center justify-center border-4 border-white/20">
               <UserIcon size={48} className="text-primary" />
             </div>
-            {user.role !== 'teacher' && (
+            {user.role === 'student' && (
               <div className="absolute -bottom-2 -right-2 bg-yellow-400 text-primary w-10 h-10 rounded-full flex items-center justify-center font-black border-2 border-primary shadow-lg">
                 {stats.level}
               </div>
@@ -144,10 +183,13 @@ export default function Profile() {
                 <h1 className="text-3xl font-black tracking-tight mb-1">{user.name}</h1>
                 <div className="flex flex-wrap justify-center md:justify-start gap-2 mb-4">
                   <p className="text-white/60 font-mono text-sm">ID: {user.id.slice(0, 8)}...</p>
-                  {user.role === 'teacher' && (
+                  {user.role !== 'student' && (
                     <div className="flex items-center gap-2">
                       <span className="bg-accent text-primary px-3 py-1 rounded-none text-[10px] font-black uppercase tracking-widest shadow-lg shadow-accent/20">
-                        Учитель: {getSubjectLabel((user as any).subject || 'general')}
+                        {user.role === 'admin' ? 'Администратор' : 
+                         user.role === 'teacher' ? `Учитель: ${getSubjectLabel((user as any).subject || 'general')}` : 
+                         user.role === 'curator' ? 'Куратор' : 
+                         user.role === 'moderator' ? 'Модератор' : 'Сотрудник'}
                       </span>
                       <span className="bg-white/10 text-white/80 px-3 py-1 rounded-none text-[10px] font-bold uppercase tracking-widest border border-white/10">
                         Статус: Активен
@@ -157,12 +199,12 @@ export default function Profile() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-3">
-                {(user.role === 'admin' || user.role === 'teacher') && (
+                {user.role !== 'student' && (
                   <Link 
-                    to={user.role === 'admin' ? '/admin' : '/teacher'}
+                    to={user.role === 'admin' ? '/admin' : user.role === 'teacher' ? '/teacher' : user.role === 'curator' ? '/curator' : user.role === 'moderator' ? '/moderator' : '/dashboard'}
                     className="flex items-center justify-center gap-2 px-6 py-3 bg-accent text-primary rounded-none text-sm font-bold uppercase tracking-widest transition-all hover:scale-105"
                   >
-                    Администрация
+                    Панель управления
                   </Link>
                 )}
                 <button 
@@ -175,7 +217,7 @@ export default function Profile() {
               </div>
             </div>
             
-            {user.role !== 'teacher' && (
+            {user.role === 'student' && (
               <>
                 <div className="w-full max-w-sm bg-white/10 h-3 rounded-full overflow-hidden mb-2">
                   <div 
@@ -256,7 +298,7 @@ export default function Profile() {
         )}
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {user.role !== 'teacher' ? [
+          {user.role === 'student' ? [
             { label: 'Очки (XP)', value: stats.totalScore, icon: <Star className="text-yellow-500" /> },
             { label: 'Уроки', value: stats.lessonsCompleted, icon: <Layers className="text-blue-500" /> },
             { label: 'Точность', value: `${stats.averageAccuracy}%`, icon: <Trophy className="text-orange-500" /> },
@@ -275,31 +317,18 @@ export default function Profile() {
             </motion.div>
           )) : (
             <>
-              <motion.div 
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                className="bg-white p-4 rounded-none shadow-sm border border-slate-100 flex flex-col items-center text-center"
-              >
-                <div className="mb-2 p-2 bg-slate-50 rounded-none"><Layers className="text-primary" /></div>
-                <div className="text-xl font-black text-slate-800">{results.length > 0 ? results.length : '—'}</div>
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Курсы</div>
-              </motion.div>
-              <motion.div 
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                className="bg-white p-4 rounded-none shadow-sm border border-slate-100 flex flex-col items-center text-center"
-              >
-                <div className="mb-2 p-2 bg-slate-50 rounded-none"><UserIcon className="text-accent" /></div>
-                <div className="text-xl font-black text-slate-800">—</div>
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Ученики</div>
-              </motion.div>
-              <div className="col-span-2 bg-white p-6 rounded-none border border-slate-100 flex items-center justify-between">
+              <div className="col-span-2 md:col-span-4 bg-white p-6 rounded-none border border-slate-100 flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-black text-primary uppercase tracking-tighter">Опыт преподавания</h3>
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Профильный предмет: {getSubjectLabel((user as any).subject || 'general')}</p>
+                  <h3 className="text-lg font-black text-primary uppercase tracking-tighter">Сотрудник системы</h3>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Роль: {
+                    user.role === 'admin' ? 'Администратор' : 
+                    user.role === 'curator' ? 'Куратор: Сопровождение учеников и проверка заданий' : 
+                    user.role === 'moderator' ? 'Модератор: Проверка заявок и качества платформы' : 
+                    user.role === 'teacher' ? `Преподаватель: ${getSubjectLabel((user as any).subject || 'general')}` : 'Сотрудник'
+                  }</p>
                 </div>
-                <div className="bg-green-50 px-4 py-2 rounded-none border border-green-100">
+                <div className="bg-green-50 px-4 py-2 rounded-none border border-green-100 shadow-sm flex items-center gap-2">
+                  <CheckCircle size={14} className="text-green-500" />
                   <span className="text-green-600 font-black text-[10px] uppercase tracking-widest">Проверен</span>
                 </div>
               </div>
@@ -307,8 +336,55 @@ export default function Profile() {
           )}
         </div>
 
+        {/* Goals Planner for Student */}
+        {user.role === 'student' && (
+          <div className="bg-white rounded-none shadow-sm border border-slate-100 overflow-hidden mb-8">
+            <div className="p-6 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Target size={20} className="text-primary" />
+                План целей
+              </h2>
+              <form onSubmit={handleCreateGoal} className="flex gap-2 w-full md:w-auto">
+                <input 
+                  type="text" 
+                  placeholder="Добавить новую цель..."
+                  value={newGoal}
+                  onChange={e => setNewGoal(e.target.value)}
+                  className="flex-1 md:w-64 bg-slate-50 border border-slate-200 px-4 py-2 text-sm outline-none focus:border-accent"
+                />
+                <button type="submit" className="bg-primary text-white px-4 py-2 hover:bg-primary/90 transition-colors flex items-center justify-center">
+                  <Plus size={18} />
+                </button>
+              </form>
+            </div>
+            
+            <div className="divide-y divide-slate-50">
+              {goals.length > 0 ? goals.map(goal => (
+                <div key={goal.id} className="p-4 flex items-center justify-between group hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-slate-100 flex items-center justify-center rounded-sm text-slate-400">
+                      <Target size={14} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-800 text-sm">{goal.title}</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Добавлено {goal.created_at?.toDate ? goal.created_at.toDate().toLocaleDateString('ru-RU') : 'Недавно'}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => handleDeleteGoal(goal.id)} className="text-slate-300 hover:text-red-500 transition-colors p-2 opacity-0 group-hover:opacity-100">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              )) : (
+                <div className="p-8 text-center text-slate-400">
+                  <p className="text-sm">Нет активных целей. Создайте свой первый план выше!</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* History */}
-        {user.role !== 'teacher' && (
+        {user.role === 'student' && (
           <div className="bg-white rounded-none shadow-sm border border-slate-100 overflow-hidden mb-8">
             <div className="p-6 border-b border-slate-50 flex items-center justify-between">
               <h2 className="text-xl font-bold flex items-center gap-2">

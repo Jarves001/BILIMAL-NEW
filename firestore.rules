@@ -219,10 +219,15 @@ service cloud.firestore {
     }
 
     match /exam_results/{resultId} {
-      allow list: if isSignedIn() && (isAdmin() || isTeacher());
-      allow get: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin() || isTeacher());
+      allow list, get: if isSignedIn() && (resource.data.user_id == request.auth.uid || isAdmin() || isTeacher() || isCurator() || isModerator());
       allow create: if isSignedIn() && isValidExamResult(incoming());
       allow update, delete: if isAdmin();
+    }
+
+    match /goals/{goalId} {
+      allow get, list: if isSignedIn() && (resource.data.user_id == request.auth.uid || isModerator() || isCurator());
+      allow create: if isSignedIn() && incoming().user_id == request.auth.uid;
+      allow update, delete: if isSignedIn() && (resource.data.user_id == request.auth.uid || isModerator() || isCurator());
     }
 
     match /messages/{messageId} {
