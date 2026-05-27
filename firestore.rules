@@ -171,7 +171,7 @@ service cloud.firestore {
       allow get: if isSignedIn() && (resource.data.user_id == request.auth.uid || isModerator());
       allow list: if isSignedIn() && (resource.data.user_id == request.auth.uid || isModerator());
       allow create: if isSignedIn() && isValidTeacherApplication(incoming());
-      allow update: if isModerator();
+      allow update, delete: if isModerator() || (isSignedIn() && resource.data.user_id == request.auth.uid);
     }
 
     match /groups/{groupId} {

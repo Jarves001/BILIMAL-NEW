@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/client';
 import { db } from '../lib/firebase';
-import { collection, query, where, getDocs, limit, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, orderBy, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
 import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX, Trophy, Target, MessageSquare, AlertCircle, CheckCircle, X, Send, Play, Book, BookMarked, Timer, Lock, Calendar, Video } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -240,7 +240,12 @@ export default function Dashboard() {
           'bg-green-50 border-green-200'
         }`}>
           {application.status === 'rejected' && (
-             <button onClick={() => setHideAppBanner(true)} className="absolute top-4 right-4 text-red-400 hover:text-red-600 transition-colors">
+             <button onClick={async () => {
+                setHideAppBanner(true);
+                if (application.id) {
+                   await deleteDoc(doc(db, 'teacher_applications', application.id));
+                }
+             }} className="absolute top-4 right-4 text-red-400 hover:text-red-600 transition-colors">
                <X size={20} />
              </button>
           )}
