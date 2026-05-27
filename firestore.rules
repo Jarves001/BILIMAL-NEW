@@ -148,8 +148,8 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow get: if isSignedIn() && (request.auth.uid == userId || isModerator() || isCurator() || isTeacher());
-      allow list: if isSignedIn() && (isModerator() || isCurator() || (resource.data.role == 'teacher'));
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
       allow update: if isSignedIn() && (request.auth.uid == userId || isModerator()) && (
         (request.auth.uid == userId && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'shift'])) ||

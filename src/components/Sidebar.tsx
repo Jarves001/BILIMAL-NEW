@@ -25,8 +25,10 @@ export default function Sidebar() {
   const links = [
     { name: 'Портал', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Чат', path: '/chat', icon: MessageCircle },
-    { name: 'Мой профиль', path: '/profile', icon: UserIcon },
-    ...(user?.role !== 'teacher' ? [{ name: 'Настроить тариф', path: '/subscriptions', icon: Trophy }] : []),
+    ...(user?.role === 'student' ? [
+      { name: 'Мой профиль', path: '/profile', icon: UserIcon },
+      { name: 'Настроить тариф', path: '/subscriptions', icon: Trophy }
+    ] : []),
   ];
 
   const subjects = user?.role === 'teacher' 
@@ -74,6 +76,16 @@ export default function Sidebar() {
           </Link>
         )}
 
+        {(user?.role === 'admin' || user?.role === 'curator') && (
+          <Link
+            to="/curator"
+            className={`sidebar-link ${isActive('/curator') ? 'sidebar-link-active' : 'sidebar-link-inactive'}`}
+          >
+            <Shield size={18} />
+            <span>Кураторство</span>
+          </Link>
+        )}
+
         {user?.role === 'teacher' && (
           <Link
             to="/teacher"
@@ -98,9 +110,9 @@ export default function Sidebar() {
 
       <div className="p-4 border-t border-white/10 bg-primary/40">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded bg-accent/20 flex items-center justify-center text-accent">
+          <Link to="/profile" className="w-10 h-10 rounded bg-accent/20 flex items-center justify-center text-accent hover:bg-accent/40 transition-colors" title="Мой профиль">
             <UserIcon size={20} />
-          </div>
+          </Link>
           <div className="flex-1 overflow-hidden">
             <p className="text-xs font-bold truncate">{user?.name}</p>
             <p className="text-[10px] text-accent truncate uppercase font-bold">
