@@ -285,7 +285,7 @@ export default function Dashboard() {
           )}
           {application.status === 'rejected' && (
              <Link 
-               to="/apply-teacher"
+               to="/teacher-application"
                className="bg-red-600 text-white px-4 py-2 rounded-none text-[10px] font-bold uppercase tracking-widest mt-4 sm:mt-0 whitespace-nowrap"
              >
                Отправить заново

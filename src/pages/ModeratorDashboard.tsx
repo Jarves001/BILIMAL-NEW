@@ -172,7 +172,7 @@ export default function ModeratorDashboard() {
     if (!userToCurator) return alert("Выберите пользователя");
     if (!window.confirm("Назначить этого пользователя куратором?")) return;
     try {
-      await api.put(`/admin/users/${userToCurator}/role`, { role: "curator" });
+      await updateDoc(doc(db, "users", userToCurator), { role: "curator" });
       alert("Пользователь успешно назначен куратором!");
       setUserToCurator("");
       fetchData(); // re-fetch to update roles
