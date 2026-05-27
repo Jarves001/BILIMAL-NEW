@@ -7,6 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import { BookOpen, GraduationCap, ChevronRight, Star, Clock, FilterX, Trophy, Target, MessageSquare, AlertCircle, CheckCircle, X, Send, Play, Book, BookMarked, Timer, Lock, Calendar, Video } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSubjectLabel, SUBJECTS } from '../constants';
+import ScheduleViewer from '../components/ScheduleViewer';
 
 interface Course {
   id: string;
@@ -322,12 +323,6 @@ export default function Dashboard() {
               </h4>
               <p className="text-xs text-slate-500 mt-2">Интерактивные занятия с преподавателями. Ссылки на подключения отправляются модератором и учителями напрямую в Чат.</p>
             </div>
-            {myGroup?.schedule_text && (
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
-                 <p className="text-[10px] uppercase text-blue-500 font-bold tracking-widest mb-1">Ваше расписание</p>
-                 <p className="text-xs font-medium text-blue-900">{myGroup.schedule_text}</p>
-              </div>
-            )}
           </div>
           <div className="p-4 bg-white hover:bg-slate-50 transition-colors">
             <p className="text-[10px] uppercase text-slate-400 font-bold tracking-widest mb-1">Постоянно</p>
@@ -348,6 +343,14 @@ export default function Dashboard() {
              <button onClick={() => window.scrollTo(0, 0)} className="mt-4 px-4 py-2 bg-accent rounded-lg text-primary hover:bg-accent/80 text-[10px] font-bold uppercase w-full">Сдать экзамен</button>
           </div>
         </div>
+        {myGroup && (
+           <div className="p-4 border-t border-slate-100 bg-slate-50/30">
+               <ScheduleViewer 
+                 scheduleData={myGroup?.schedule_data} 
+                 fallbackText={myGroup?.schedule_text} 
+               />
+           </div>
+        )}
       </div>
       )}
 

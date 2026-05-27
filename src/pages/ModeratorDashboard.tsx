@@ -24,6 +24,7 @@ import {
   PhoneIncoming,
 } from "lucide-react";
 import api from "../api/client";
+import ScheduleEditor from "../components/ScheduleEditor";
 
 export default function ModeratorDashboard() {
   const { user } = useAuth();
@@ -624,26 +625,10 @@ export default function ModeratorDashboard() {
                       </div>
 
                       <div className="mb-6 flex-grow">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">
-                          Расписание (видит студент)
-                        </label>
-                        <textarea
-                          rows={3}
-                          className="w-full bg-slate-50 border-2 border-slate-100 rounded-lg p-3 text-xs outline-none focus:border-primary resize-none transition-all placeholder:text-slate-300 text-slate-700"
-                          placeholder="Напр. Пн, Ср, Пт 18:00 - Математика"
-                          defaultValue={group.schedule_text || ""}
-                          onBlur={async (e) => {
-                            const val = e.target.value;
-                            if (val !== group.schedule_text) {
-                              try {
-                                await updateDoc(doc(db, "groups", group.id), {
-                                  schedule_text: val,
-                                });
-                              } catch (err) {
-                                alert("Ошибка сохранения расписания");
-                              }
-                            }
-                          }}
+                        <ScheduleEditor 
+                          groupId={group.id} 
+                          initialSchedule={group.schedule_data || []} 
+                          fallbackText={group.schedule_text} 
                         />
                       </div>
 

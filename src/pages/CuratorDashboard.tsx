@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Users, Video, Calendar, ShieldCheck } from 'lucide-react';
+import ScheduleEditor from '../components/ScheduleEditor';
 
 export default function CuratorDashboard() {
   const { user } = useAuth();
@@ -43,26 +44,11 @@ export default function CuratorDashboard() {
                <span className="text-sm font-black">{group.students?.length || 0}</span>
             </div>
                
-            <div className="mb-4">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Расписание (видит студент)</label>
-              <textarea 
-                rows={2}
-                className="w-full bg-slate-50 border p-2 text-xs outline-none focus:border-primary resize-none"
-                placeholder="Напр. Пн, Ср, Пт 18:00 - Математика"
-                defaultValue={group.schedule_text || ''}
-                onBlur={async (e) => {
-                  const val = e.target.value;
-                  if (val !== group.schedule_text) {
-                    try {
-                      const { doc, updateDoc } = await import('firebase/firestore');
-                      await updateDoc(doc(db, 'groups', group.id), { schedule_text: val });
-                    } catch (err) {
-                      alert('Ошибка сохранения расписания');
-                    }
-                  }
-                }}
-              />
-            </div>
+            <ScheduleEditor 
+              groupId={group.id} 
+              initialSchedule={group.schedule_data || []} 
+              fallbackText={group.schedule_text} 
+            />
 
             <button className="w-full py-2 bg-primary text-white text-xs font-bold uppercase tracking-widest hover:bg-primary/90 transition-colors">
               Журнал посещаемости
