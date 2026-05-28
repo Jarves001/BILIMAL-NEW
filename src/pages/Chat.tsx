@@ -31,7 +31,19 @@ export default function Chat() {
         }
         
         const snap = await getDocs(contactsQuery);
-        let list = snap.docs.map(d => ({ id: d.id, ...(d.data() as object) })).filter(u => u.id !== user.id);
+        let list: any[] = snap.docs.map(d => ({ id: d.id, ...(d.data() as object) })).filter((u: any) => u.id !== user.id);
+        
+        if (user.role === 'teacher') {
+          list = [
+            {
+              id: 'group_all_students',
+              name: '📣 Все ученики (Группа)',
+              role: 'группа',
+              isGroup: true
+            },
+            ...list
+          ];
+        }
         
         setContacts(list);
       } catch (err) {
@@ -70,11 +82,17 @@ export default function Chat() {
     setNewMessage('');
     
     try {
+      let participants = [user.id, selectedUser.id];
+      if (selectedUser.isGroup) {
+        const studentIds = contacts.filter((c: any) => c.role === 'student' || !c.role).map((c: any) => c.id);
+        participants = [user.id, selectedUser.id, ...studentIds];
+      }
+
       await addDoc(collection(db, 'messages'), {
         text,
         senderId: user.id,
         receiverId: selectedUser.id,
-        participants: [user.id, selectedUser.id],
+        participants,
         subject: selectedUser.subject || (user as any).subject || 'general',
         createdAt: serverTimestamp()
       });

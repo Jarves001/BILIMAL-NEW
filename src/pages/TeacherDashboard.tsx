@@ -164,13 +164,24 @@ export default function TeacherDashboard() {
         const q = query(
           collection(db, 'messages'),
           where('subject', '==', teacherSubject),
-          where('receiverId', 'in', [user.id, 'admin']) // Also check messages sent to 'admin' but if subject matches
+          where('receiverId', 'in', [user.id, 'admin'])
         );
         const snap = await getDocs(q);
-        const studentIds = [...new Set(snap.docs.map(d => d.data().senderId))].filter(id => id !== user.id);
+        const messageStudentIds = [...new Set(snap.docs.map(d => d.data().senderId))].filter(id => id !== user.id);
         
-        const studentsList = [];
-        for (const sId of studentIds) {
+        const activeStudentIds = students.map(s => s.id);
+        const allStudentIds = [...new Set([...messageStudentIds, ...activeStudentIds])];
+        
+        const studentsList: any[] = [
+          {
+            id: 'group_all_students',
+            name: '📣 Мои ученики (Группа)',
+            role: 'группа',
+            isGroup: true
+          }
+        ];
+        
+        for (const sId of allStudentIds) {
           const sDoc = await getDoc(doc(db, 'users', sId as string));
           if (sDoc.exists()) {
             studentsList.push({ id: sDoc.id, ...sDoc.data() });
@@ -180,7 +191,7 @@ export default function TeacherDashboard() {
       };
       fetchStudents();
     }
-  }, [activeTab, user]);
+  }, [activeTab, user, students]);
 
   // Chat logic - real-time messages for subject
   useEffect(() => {
@@ -211,12 +222,18 @@ export default function TeacherDashboard() {
     if (!newChatMessage.trim() || !user || !selectedChatUser) return;
 
     try {
+      let participants = [user.id, selectedChatUser.id];
+      if (selectedChatUser.isGroup) {
+        const studentIds = chatStudents.filter((c: any) => !c.isGroup).map((c: any) => c.id);
+        participants = [user.id, selectedChatUser.id, ...studentIds];
+      }
+
       await addDoc(collection(db, 'messages'), {
         text: newChatMessage,
         senderId: user.id,
         receiverId: selectedChatUser.id,
         subject: user.subject || 'general',
-        participants: [user.id, selectedChatUser.id],
+        participants,
         createdAt: serverTimestamp()
       });
       setNewChatMessage('');

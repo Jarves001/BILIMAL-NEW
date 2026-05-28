@@ -508,9 +508,12 @@ export default function Dashboard() {
             <div className="p-0 divide-y">
               {filteredCourses.length > 0 ? filteredCourses.map((course) => (
                 <div key={course.id} className="p-6 flex flex-col md:flex-row gap-6 hover:bg-slate-50 transition-colors group">
-                  <div className="w-full md:w-48 aspect-video bg-primary flex items-center justify-center rounded shrink-0 overflow-hidden relative">
-                    <BookOpen className="text-white opacity-20" size={32} />
-                    <div className="absolute inset-0 bg-primary/20 group-hover:bg-transparent transition-all"></div>
+                  <div 
+                    className="w-full md:w-48 aspect-video bg-primary flex items-center justify-center rounded shrink-0 overflow-hidden relative bg-cover bg-center"
+                    style={{ backgroundImage: course.subject?.toLowerCase() === 'math' ? "url('/math-bg.png')" : course.subject?.toLowerCase() === 'logic' ? "url('/logic-bg.png')" : course.subject?.toLowerCase() === 'kazakh' ? "url('/kazakh-bg.png')" : course.subject?.toLowerCase() === 'russian' ? "url('/russian-bg.png')" : course.subject?.toLowerCase() === 'english' ? "url('/english-bg.png')" : course.subject?.toLowerCase() === 'reading' ? "url('/reading-bg.png')" : "url('/fallback-bg.png')" }}
+                  >
+                    <BookOpen className="text-white opacity-0" size={32} />
+                    <div className="absolute inset-0 bg-primary/40 group-hover:bg-primary/20 transition-all"></div>
                   </div>
                   <div className="flex-1">
                     <div className="text-[10px] font-bold text-accent uppercase tracking-widest mb-1">{course.subject}</div>
