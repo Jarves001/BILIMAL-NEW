@@ -23,7 +23,8 @@ import {
   Clipboard,
   Sparkles,
   Timer,
-  BookMarked
+  BookMarked,
+  Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getSubjectLabel, SUBJECTS } from '../constants';
@@ -74,7 +75,7 @@ export default function TeacherDashboard() {
   const [courses, setCourses] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'content' | 'exams' | 'stats' | 'students' | 'chat'>(tabParam || 'content');
+  const [activeTab, setActiveTab] = useState<'schedule' | 'content' | 'exams' | 'stats' | 'students' | 'chat'>(tabParam || 'content');
   const [isAddingCourse, setIsAddingCourse] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [isAddingLesson, setIsAddingLesson] = useState(false);
@@ -102,6 +103,7 @@ export default function TeacherDashboard() {
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [newChatMessage, setNewChatMessage] = useState('');
   const [attendanceGroup, setAttendanceGroup] = useState<any>(null);
+  const [scheduleGroups, setScheduleGroups] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalStudents: 0,
     avgProgress: 0,
@@ -153,6 +155,15 @@ export default function TeacherDashboard() {
         }
       };
       fetchStats();
+    }
+  }, [activeTab, user]);
+
+  // Fetch groups for schedule
+  useEffect(() => {
+    if (activeTab === 'schedule' && user) {
+      getDocs(collection(db, 'groups'))
+        .then(snap => setScheduleGroups(snap.docs.map(d => ({id: d.id, ...d.data()}))))
+        .catch(console.error);
     }
   }, [activeTab, user]);
 
@@ -680,6 +691,7 @@ export default function TeacherDashboard() {
 
       <div className="flex gap-4 border-b border-slate-200 overflow-x-auto no-scrollbar">
         {[
+          { id: 'schedule', label: 'Расписание', icon: Calendar },
           { id: 'content', label: 'Контент', icon: Layout },
           { id: 'exams', label: 'Экзамены', icon: BookMarked },
           { id: 'students', label: 'Ученики', icon: Users },
@@ -703,6 +715,60 @@ export default function TeacherDashboard() {
       </div>
 
       <AnimatePresence mode="wait">
+        {activeTab === 'schedule' && (
+          <motion.div
+            key="schedule"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-none border border-slate-200 shadow-sm overflow-hidden"
+          >
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+               <h2 className="text-xl font-black text-primary uppercase tracking-tighter">Мое расписание</h2>
+            </div>
+            <div className="p-0">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <th className="p-6 w-1/3">Группа</th>
+                    <th className="p-6 w-1/3">День недели</th>
+                    <th className="p-6 w-1/3 text-right">Время</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {scheduleGroups.flatMap(group => 
+                    (group.schedule_data || [])
+                      .filter((s: any) => s.subject === getSubjectLabel(user?.subject || 'general'))
+                      .map((s: any) => (
+                        <tr key={`${group.id}-${s.id}`} className="hover:bg-slate-50 transition-colors cursor-pointer">
+                          <td className="p-6">
+                            <div className="font-bold text-slate-700">Группа {group.name || group.id.slice(0, 4)}</div>
+                          </td>
+                          <td className="p-6 text-sm text-slate-600 font-medium">
+                            {s.day}
+                          </td>
+                          <td className="p-6 text-right">
+                            <span className="inline-block px-3 py-1 bg-accent/20 text-accent font-black tracking-widest uppercase text-xs">
+                              {s.time || '—'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                  )}
+                  {scheduleGroups.flatMap(g => (g.schedule_data || []).filter((s: any) => s.subject === getSubjectLabel(user?.subject || 'general'))).length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="p-10 text-center">
+                         <Calendar size={48} className="mx-auto text-slate-200 mb-4" />
+                         <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest mb-2">Расписание пусто</h3>
+                         <p className="text-xs tracking-widest uppercase text-slate-400">У вас нет назначенных занятий в расписании групп</p>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        )}
+
         {activeTab === 'exams' && (
           <motion.div 
             key="exams-grid"

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { SUBJECTS } from '../constants';
 
 export interface ScheduleItem {
   id: string;
@@ -23,7 +24,7 @@ export default function ScheduleEditor({ groupId, initialSchedule, fallbackText 
   const [isSaving, setIsSaving] = useState(false);
 
   const handleAdd = () => {
-    setSchedule([...schedule, { id: Date.now().toString(), day: 'Понедельник', time: '', subject: '' }]);
+    setSchedule([...schedule, { id: Date.now().toString(), day: 'Понедельник', time: '', subject: SUBJECTS[0].name }]);
   };
 
   const handleRemove = (id: string) => {
@@ -99,13 +100,16 @@ export default function ScheduleEditor({ groupId, initialSchedule, fallbackText 
                     />
                   </td>
                   <td className="p-2">
-                    <input 
-                      type="text" 
-                      placeholder="Напр. Математика"
+                    <select 
                       value={item.subject} 
                       onChange={(e) => handleChange(item.id, 'subject', e.target.value)}
-                      className="w-full bg-white border-2 border-slate-100 p-2 text-xs outline-none rounded focus:border-primary text-slate-700 font-medium placeholder:text-slate-300"
-                    />
+                      className="w-full bg-white border-2 border-slate-100 p-2 text-xs outline-none rounded focus:border-primary text-slate-700 font-medium"
+                    >
+                      <option value="" disabled>Выберите предмет</option>
+                      {SUBJECTS.map(s => (
+                        <option key={s.id} value={s.name}>{s.name}</option>
+                      ))}
+                    </select>
                   </td>
                   <td className="p-2 text-center">
                     <button 
