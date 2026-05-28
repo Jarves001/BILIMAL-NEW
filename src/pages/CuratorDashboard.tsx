@@ -4,11 +4,13 @@ import { db } from '../lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Users, Calendar, ShieldCheck, Mail, CheckCircle2, ChevronRight, Activity, Clock } from 'lucide-react';
 import ScheduleEditor from '../components/ScheduleEditor';
+import AttendanceModal from '../components/AttendanceModal';
 
 export default function CuratorDashboard() {
   const { user } = useAuth();
   const [groups, setGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [attendanceGroup, setAttendanceGroup] = useState<any>(null);
 
   useEffect(() => {
     if (user) fetchGroups();
@@ -106,7 +108,10 @@ export default function CuratorDashboard() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mt-auto">
-                   <button className="w-full bg-primary/5 text-primary border border-primary/10 rounded-xl py-3.5 text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2">
+                   <button 
+                     onClick={() => setAttendanceGroup(group)}
+                     className="w-full bg-primary/5 text-primary border border-primary/10 rounded-xl py-3.5 text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2"
+                   >
                       Журнал
                    </button>
                    <button className="w-full border-2 border-slate-200 text-slate-600 rounded-xl py-3.5 text-[10px] font-black uppercase tracking-widest hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-2">
@@ -130,6 +135,12 @@ export default function CuratorDashboard() {
           </div>
         </div>
       </section>
+
+      <AttendanceModal 
+        isOpen={!!attendanceGroup} 
+        onClose={() => setAttendanceGroup(null)} 
+        group={attendanceGroup} 
+      />
     </div>
   );
 }

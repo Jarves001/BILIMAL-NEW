@@ -224,6 +224,11 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    match /attendance/{docId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && (isCurator() || isModerator() || isAdmin() || isTeacher());
+    }
+
     match /goals/{goalId} {
       allow get, list: if isSignedIn() && (resource.data.user_id == request.auth.uid || isModerator() || isCurator());
       allow create: if isSignedIn() && incoming().user_id == request.auth.uid;

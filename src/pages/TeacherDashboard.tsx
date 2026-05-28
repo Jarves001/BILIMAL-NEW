@@ -1,8 +1,9 @@
-import { useState, useEffect, FormEvent, useRef, MouseEvent } from 'react';
+import { useEffect, useState, FormEvent, useRef, MouseEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, query, getDocs, where, addDoc, doc, getDoc, deleteDoc, updateDoc, onSnapshot, orderBy, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
+import AttendanceModal from '../components/AttendanceModal';
 import { 
   Users, 
   Plus, 
@@ -98,6 +99,7 @@ export default function TeacherDashboard() {
   const [selectedChatUser, setSelectedChatUser] = useState<any | null>(null);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [newChatMessage, setNewChatMessage] = useState('');
+  const [attendanceGroup, setAttendanceGroup] = useState<any>(null);
   const [stats, setStats] = useState({
     totalStudents: 0,
     avgProgress: 0,
@@ -1033,8 +1035,17 @@ export default function TeacherDashboard() {
             key="students-list"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-none border border-slate-200 overflow-hidden shadow-sm"
+            className="space-y-4"
           >
+            <div className="flex justify-end">
+              <button 
+                 onClick={() => setAttendanceGroup({ id: `teacher_${user?.id}_all`, name: 'Мои ученики', students: students.map(s => s.id) })}
+                 className="px-6 py-3 bg-primary text-white font-black uppercase text-[10px] tracking-widest hover:scale-105 transition-all shadow-lg flex items-center gap-2"
+               >
+                 Журнал посещаемости
+               </button>
+            </div>
+            <div className="bg-white rounded-none border border-slate-200 overflow-hidden shadow-sm">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold uppercase tracking-widest text-slate-400">
@@ -1095,6 +1106,7 @@ export default function TeacherDashboard() {
                 )}
               </tbody>
             </table>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1578,6 +1590,12 @@ export default function TeacherDashboard() {
           </motion.div>
         </div>
       )}
+
+      <AttendanceModal 
+        isOpen={!!attendanceGroup} 
+        onClose={() => setAttendanceGroup(null)} 
+        group={attendanceGroup} 
+      />
     </div>
   );
 }
