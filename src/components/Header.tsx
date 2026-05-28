@@ -15,11 +15,18 @@ export default function Header({ title }: { title: string }) {
         </div>
         <div className="hidden sm:block w-px h-6 bg-slate-200"></div>
         <div className="flex items-center gap-3">
-          <div className="text-right">
+          <div className="text-right hidden sm:block">
             <p className="text-xs font-bold leading-none">{user?.name}</p>
             <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-tighter">
               {user?.role === 'admin' ? 'Администратор' : user?.role === 'teacher' ? 'Преподаватель' : 'Студент НИШ/БИЛ'}
             </p>
+          </div>
+          <div className="w-8 h-8 rounded-full bg-accent/20 border-2 border-accent flex items-center justify-center overflow-hidden shrink-0">
+            {user?.avatar_url ? (
+               <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+               <div className="text-xs font-bold text-accent">{user?.name ? user.name.substring(0, 2).toUpperCase() : 'U'}</div>
+            )}
           </div>
         </div>
       </div>

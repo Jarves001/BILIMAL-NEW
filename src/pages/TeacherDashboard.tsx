@@ -737,7 +737,7 @@ export default function TeacherDashboard() {
                 <tbody className="divide-y divide-slate-100">
                   {scheduleGroups.flatMap(group => 
                     (group.schedule_data || [])
-                      .filter((s: any) => s.subject === getSubjectLabel(user?.subject || 'general'))
+                      .filter((s: any) => s.subject && getSubjectLabel(user?.subject || '').toLowerCase().trim() === s.subject.toLowerCase().trim())
                       .map((s: any) => (
                         <tr key={`${group.id}-${s.id}`} className="hover:bg-slate-50 transition-colors cursor-pointer">
                           <td className="p-6">
@@ -754,7 +754,7 @@ export default function TeacherDashboard() {
                         </tr>
                       ))
                   )}
-                  {scheduleGroups.flatMap(g => (g.schedule_data || []).filter((s: any) => s.subject === getSubjectLabel(user?.subject || 'general'))).length === 0 && (
+                  {scheduleGroups.flatMap(g => (g.schedule_data || []).filter((s: any) => s.subject && getSubjectLabel(user?.subject || '').toLowerCase().trim() === s.subject.toLowerCase().trim())).length === 0 && (
                     <tr>
                       <td colSpan={3} className="p-10 text-center">
                          <Calendar size={48} className="mx-auto text-slate-200 mb-4" />

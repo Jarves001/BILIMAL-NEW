@@ -110,8 +110,12 @@ export default function Sidebar() {
 
       <div className="p-4 border-t border-white/10 bg-primary/40">
         <div className="flex items-center gap-3">
-          <Link to="/profile" className="w-10 h-10 rounded bg-accent/20 flex items-center justify-center text-accent hover:bg-accent/40 transition-colors" title="Мой профиль">
-            <UserIcon size={20} />
+          <Link to="/profile" className="w-10 h-10 rounded bg-accent/20 flex items-center justify-center text-accent hover:bg-accent/40 transition-colors overflow-hidden" title="Мой профиль">
+            {user?.avatar_url ? (
+               <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+               <UserIcon size={20} />
+            )}
           </Link>
           <div className="flex-1 overflow-hidden">
             <p className="text-xs font-bold truncate">{user?.name}</p>

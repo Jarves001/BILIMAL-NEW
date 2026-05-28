@@ -39,7 +39,11 @@ export default function Navbar() {
             ) : (
               <div className="flex items-center space-x-4 border-l border-gray-700 pl-4">
                 <div className="flex items-center space-x-2 text-sm text-gray-300">
-                  <UserIcon size={16} />
+                  {user.avatar_url ? (
+                    <img src={user.avatar_url} alt="Profile" className="w-6 h-6 rounded-full object-cover border border-gray-600" />
+                  ) : (
+                    <UserIcon size={16} />
+                  )}
                   <span>{user.name}</span>
                 </div>
                 <button onClick={handleLogout} className="text-gray-300 hover:text-white transition-colors">

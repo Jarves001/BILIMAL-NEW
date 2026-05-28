@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { auth, db } from '../lib/firebase';
-import { signOut } from 'firebase/auth';
-import { collection, query, where, getDocs, orderBy, limit, doc, getDoc, addDoc, deleteDoc } from 'firebase/firestore';
+import { auth, db, storage } from '../lib/firebase';
+import { signOut, updateProfile } from 'firebase/auth';
+import { collection, query, where, getDocs, orderBy, limit, doc, getDoc, addDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getSubjectLabel } from '../constants';
 import { 
   User as UserIcon, 
@@ -21,7 +22,8 @@ import {
   Target,
   Plus,
   Trash2,
-  X
+  X,
+  Camera
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -161,6 +163,33 @@ export default function Profile() {
     }
   };
 
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+    
+    setUploadingAvatar(true);
+    try {
+      const storageRef = ref(storage, `avatars/${user.id}_${Date.now()}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      
+      // Update firestore
+      await updateDoc(doc(db, 'users', user.id), { avatar_url: url });
+      
+      // Update local state
+      setUser({ ...user, avatar_url: url });
+      
+    } catch (err) {
+      console.error('Failed to upload avatar:', err);
+      alert('Ошибка при загрузке фото');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -168,9 +197,26 @@ export default function Profile() {
       {/* Header / Banner */}
       <div className="bg-primary text-white pt-12 pb-24 px-4">
         <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-6">
-          <div className="relative">
-            <div className="w-24 h-24 bg-accent rounded-full flex items-center justify-center border-4 border-white/20">
-              <UserIcon size={48} className="text-primary" />
+          <div className="relative group">
+            <div className="w-24 h-24 bg-accent rounded-full flex items-center justify-center border-4 border-white/20 overflow-hidden relative">
+              {user.avatar_url ? (
+                <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <UserIcon size={48} className="text-primary" />
+              )}
+              {!targetUid && (
+                <label className="absolute inset-0 bg-primary/60 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                  {uploadingAvatar ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <Camera size={20} className="mb-1" />
+                      <span className="text-[9px] font-bold uppercase tracking-widest leading-none">Фото</span>
+                    </>
+                  )}
+                  <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
+                </label>
+              )}
             </div>
             {user.role === 'student' && (
               <div className="absolute -bottom-2 -right-2 bg-yellow-400 text-primary w-10 h-10 rounded-full flex items-center justify-center font-black border-2 border-primary shadow-lg">
