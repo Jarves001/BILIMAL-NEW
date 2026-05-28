@@ -20,7 +20,8 @@ import {
   LogOut,
   Target,
   Plus,
-  Trash2
+  Trash2,
+  X
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -41,6 +42,7 @@ export default function Profile() {
   const [user, setUser] = useState<any>(null);
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hideAppBanner, setHideAppBanner] = useState(false);
   const [application, setApplication] = useState<any>(null);
   const [goals, setGoals] = useState<any[]>([]);
   const [newGoal, setNewGoal] = useState('');
@@ -238,15 +240,25 @@ export default function Profile() {
       {/* Stats Grid */}
       <div className="max-w-4xl mx-auto px-4 -mt-12">
         {/* Application Status Section */}
-        {application && (
+        {application && !hideAppBanner && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`mb-6 p-6 rounded-none border shadow-sm ${
+            className={`mb-6 p-6 rounded-none border shadow-sm relative ${
               application.status === 'pending' ? 'bg-amber-50 border-amber-200' : 
               application.status === 'approved' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
             }`}
           >
+            {(application.status === 'rejected' || application.status === 'approved') && (
+               <button onClick={async () => {
+                  setHideAppBanner(true);
+                  if (application.id) {
+                     await deleteDoc(doc(db, 'teacher_applications', application.id));
+                  }
+               }} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors z-10">
+                 <X size={20} />
+               </button>
+            )}
             <div className="flex items-center gap-4">
               <div className={`w-12 h-12 rounded-none flex items-center justify-center ${
                 application.status === 'pending' ? 'bg-amber-100 text-amber-600' : 

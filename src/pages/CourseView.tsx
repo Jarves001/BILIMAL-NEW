@@ -108,6 +108,8 @@ export default function CourseView() {
                       src={activeLesson.video_url} 
                       className="w-full h-full" 
                       controls 
+                      controlsList="nodownload"
+                      onContextMenu={(e) => e.preventDefault()}
                       poster="https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop"
                     />
                   )

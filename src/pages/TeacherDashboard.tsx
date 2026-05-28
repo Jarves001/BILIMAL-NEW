@@ -1,7 +1,8 @@
 import { useEffect, useState, FormEvent, useRef, MouseEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { db, storage, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collection, query, getDocs, where, addDoc, doc, getDoc, deleteDoc, updateDoc, onSnapshot, orderBy, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '../hooks/useAuth';
 import AttendanceModal from '../components/AttendanceModal';
 import { 
@@ -88,6 +89,7 @@ export default function TeacherDashboard() {
     questions: [] as any[]
   });
   const [newCourse, setNewCourse] = useState({ title: '', description: '' });
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [newLesson, setNewLesson] = useState({ 
     title: '', 
     videoUrl: '', 
@@ -1173,8 +1175,38 @@ export default function TeacherDashboard() {
                   <input required value={newLesson.title} onChange={e => setNewLesson({...newLesson, title: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border-none rounded-none focus:ring-2 focus:ring-accent outline-none font-medium" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Ссылка на видео</label>
-                  <input required value={newLesson.videoUrl} onChange={e => setNewLesson({...newLesson, videoUrl: e.target.value})} className="w-full px-5 py-4 bg-slate-50 border-none rounded-none focus:ring-2 focus:ring-accent outline-none font-medium" />
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Видео урока</label>
+                  <div className="relative">
+                    <input 
+                      type="file" 
+                      accept="video/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploadingVideo(true);
+                        try {
+                          const storageRef = ref(storage, `videos/${Date.now()}_${file.name}`);
+                          await uploadBytes(storageRef, file);
+                          const downloadUrl = await getDownloadURL(storageRef);
+                          setNewLesson({...newLesson, videoUrl: downloadUrl});
+                        } catch (err) {
+                          console.error("Failed to upload video", err);
+                          alert("Ошибка загрузки видео");
+                        } finally {
+                          setUploadingVideo(false);
+                        }
+                      }}
+                       className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-none file:border-0 file:text-xs file:font-bold file:uppercase file:tracking-widest file:bg-primary file:text-white hover:file:bg-primary/90 transition-colors" 
+                    />
+                    {uploadingVideo && (
+                      <div className="absolute inset-0 bg-white/80 rounded flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                      </div>
+                    )}
+                    {newLesson.videoUrl && !uploadingVideo && (
+                       <p className="text-xs text-green-600 font-bold mt-2 truncate">Видео загружено</p>
+                    )}
+                  </div>
                 </div>
               </div>
 

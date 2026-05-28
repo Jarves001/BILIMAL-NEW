@@ -239,13 +239,13 @@ export default function Dashboard() {
           application.status === 'rejected' ? 'bg-red-50 border-red-200' :
           'bg-green-50 border-green-200'
         }`}>
-          {application.status === 'rejected' && (
+          {(application.status === 'rejected' || application.status === 'approved') && (
              <button onClick={async () => {
                 setHideAppBanner(true);
                 if (application.id) {
                    await deleteDoc(doc(db, 'teacher_applications', application.id));
                 }
-             }} className="absolute top-4 right-4 text-red-400 hover:text-red-600 transition-colors">
+             }} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors z-10">
                <X size={20} />
              </button>
           )}
