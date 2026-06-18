@@ -7,16 +7,30 @@ import { motion } from 'motion/react';
 
 const PLANS = [
   {
-    id: 'single',
-    title: '1 Предмет',
-    price: '6 990',
+    id: 'math',
+    title: 'Математика (1 Месяц)',
+    price: '8 990',
     duration: '30 дней',
     features: [
-      'Доступ к 1 выбранному предмету',
-      'Видео-уроки и лекции',
+      'Полный курс Математики',
+      'Обучающие видео-лекции',
+      'Тематические задачи и тесты',
+      'Еженедельные экзамены',
+    ],
+    icon: Zap,
+    color: 'blue'
+  },
+  {
+    id: 'english',
+    title: 'Английский (1 Месяц)',
+    price: '8 990',
+    duration: '30 дней',
+    features: [
+      'Полный курс Английского',
+      'Грамматика и Vocabulary видео',
+      'Критерии IELTS/ЕНТ',
       'Тематические тесты',
       'Еженедельные экзамены',
-      'Чат с учителем',
     ],
     icon: Zap,
     color: 'blue'
@@ -106,7 +120,7 @@ export default function Subscriptions() {
               <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
               <p className="text-[10px] font-black uppercase tracking-widest text-primary opacity-60">Текущая подписка активна</p>
             </div>
-            <h2 className="text-2xl font-black text-primary uppercase tracking-tighter">{currentSub.plan === 'yearly' ? 'Годовой доступ' : currentSub.plan === 'monthly' ? 'Месячный доступ' : '1 Предмет'}</h2>
+            <h2 className="text-2xl font-black text-primary uppercase tracking-tighter">{currentSub.plan === 'yearly' ? 'Годовой доступ' : currentSub.plan === 'monthly' ? 'Месячный доступ' : currentSub.plan === 'math' ? 'Математика' : currentSub.plan === 'english' ? 'Английский' : currentSub.plan}</h2>
             <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Истекает: {new Date(currentSub.end_date).toLocaleDateString()}</p>
           </div>
           <div className="text-center md:text-right">

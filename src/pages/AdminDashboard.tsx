@@ -280,7 +280,7 @@ export default function AdminDashboard() {
                       <div className="flex items-center gap-2">
                         {s.subscription ? (
                           <span className="px-3 py-1 bg-green-50 text-green-700 text-[10px] font-black uppercase tracking-widest rounded-full border border-green-100">
-                            {s.subscription.plan}
+                            {s.subscription.plan === 'math' ? 'МАТЕМАТИКА' : s.subscription.plan === 'english' ? 'АНГЛИЙСКИЙ' : s.subscription.plan === 'yearly' ? 'ГОД' : s.subscription.plan === 'monthly' ? 'МЕСЯЦ' : s.subscription.plan}
                           </span>
                         ) : (
                           <span className="px-3 py-1 bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-slate-100">
@@ -293,9 +293,10 @@ export default function AdminDashboard() {
                           value=""
                         >
                           <option value="" disabled>Выдать</option>
-                          <option value="single">1 Предмет</option>
-                          <option value="monthly">Месяц</option>
-                          <option value="yearly">Год</option>
+                          <option value="math">Математика (Месяц)</option>
+                          <option value="english">Английский (Месяц)</option>
+                          <option value="monthly">Все предметы (Месяц)</option>
+                          <option value="yearly">Все предметы (Год)</option>
                         </select>
                       </div>
                     </td>

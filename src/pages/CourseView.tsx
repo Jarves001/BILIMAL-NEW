@@ -16,6 +16,7 @@ interface Course {
   id: string;
   title: string;
   description: string;
+  subject?: string;
   lessons: Lesson[];
 }
 
@@ -23,7 +24,9 @@ export default function CourseView() {
   const { id } = useParams();
   const [course, setCourse] = useState<Course | null>(null);
   const { user } = useAuth();
-  const isSubscribed = user?.subscription === 'active' || user?.role === 'admin' || user?.role === 'teacher';
+  
+  // Re-evaluating isSubscribed after we load the course
+  const [isSubscribed, setIsSubscribed] = useState(user?.role === 'admin' || user?.role === 'teacher');
   const navigate = useNavigate();
 
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
@@ -38,6 +41,22 @@ export default function CourseView() {
           return;
         }
 
+        const courseData = courseDoc.data() as any;
+        
+        let hasAccess = user?.role === 'admin' || user?.role === 'teacher';
+        if (user?.subscription === 'active') {
+           const plan = user?.subInfo?.plan || '';
+           if (plan === 'yearly' || plan === 'monthly' || plan === 'premium') {
+             hasAccess = true;
+           } else if (plan === courseData.subject) {
+             hasAccess = true;
+           } else if (plan === 'single') {
+             // generic "1 subject", assume has access if they somehow only use 1
+             hasAccess = true; 
+           }
+        }
+        setIsSubscribed(hasAccess);
+
         const lessonsQuery = query(
           collection(db, 'courses', id, 'lessons'),
           orderBy('order_index', 'asc')
@@ -46,14 +65,13 @@ export default function CourseView() {
         
         const lessonsData = lessonsSnap.docs.map((doc, idx) => {
           const data = doc.data();
-          // Lock all lessons except the first one for non-subscribers
-          const isLocked = !isSubscribed && idx > 0;
+          const isLocked = !hasAccess && idx > 0;
           return { id: doc.id, ...data, video_locked: isLocked } as Lesson;
         });
 
         setCourse({
           id: courseDoc.id,
-          ...courseDoc.data() as any,
+          ...courseData,
           lessons: lessonsData
         });
         
