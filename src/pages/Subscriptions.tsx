@@ -4,8 +4,23 @@ import { db } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Check, Zap, Award, Crown } from 'lucide-react';
 import { motion } from 'motion/react';
+import { getSubjectLabel } from '../constants';
 
 const PLANS = [
+  {
+    id: 'single',
+    title: '1 Предмет (Базовый)',
+    price: '6 990',
+    duration: '30 дней',
+    features: [
+      'Доступ к 1 базовому предмету',
+      'Видео-уроки и лекции',
+      'Тематические тесты',
+      'Еженедельные экзамены',
+    ],
+    icon: Zap,
+    color: 'slate'
+  },
   {
     id: 'math',
     title: 'Математика (1 Месяц)',
@@ -120,7 +135,7 @@ export default function Subscriptions() {
               <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
               <p className="text-[10px] font-black uppercase tracking-widest text-primary opacity-60">Текущая подписка активна</p>
             </div>
-            <h2 className="text-2xl font-black text-primary uppercase tracking-tighter">{currentSub.plan === 'yearly' ? 'Годовой доступ' : currentSub.plan === 'monthly' ? 'Месячный доступ' : currentSub.plan === 'math' ? 'Математика' : currentSub.plan === 'english' ? 'Английский' : currentSub.plan}</h2>
+            <h2 className="text-2xl font-black text-primary uppercase tracking-tighter">{currentSub.plan === 'yearly' ? 'Годовой доступ' : currentSub.plan === 'monthly' ? 'Месячный доступ' : getSubjectLabel(currentSub.plan)}</h2>
             <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Истекает: {new Date(currentSub.end_date).toLocaleDateString()}</p>
           </div>
           <div className="text-center md:text-right">

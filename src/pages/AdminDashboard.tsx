@@ -17,6 +17,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'students' | 'teachers' | 'applications' | 'admins'>('students');
+  const [grantingSingleSubjectId, setGrantingSingleSubjectId] = useState<string | null>(null);
 
   const fetchData = async (isManual = false) => {
     if (isManual) setRefreshing(true);
@@ -136,7 +137,16 @@ export default function AdminDashboard() {
         endDate.setMonth(endDate.getMonth() + 1);
       }
 
-      await updateDoc(doc(db, 'users', studentId), { has_video_access: true });
+      await updateDoc(doc(db, 'users', studentId), { 
+        has_video_access: true,
+        subscription_status: 'active',
+        subscription: {
+          plan,
+          start_date: new Date().toISOString(),
+          end_date: endDate.toISOString(),
+          exams_left: plan === 'yearly' ? 50 : 5,
+        }
+      });
       try {
         await updateDoc(subRef, {
           plan,
@@ -249,6 +259,7 @@ export default function AdminDashboard() {
                   <th className="px-6 py-4">Студент</th>
                   <th className="px-6 py-4">Уровень</th>
                   <th className="px-6 py-4">Подписка</th>
+                  <th className="px-6 py-4">Срок действия</th>
                   <th className="px-6 py-4">Баллы</th>
                 </tr>
               </thead>
@@ -280,24 +291,64 @@ export default function AdminDashboard() {
                       <div className="flex items-center gap-2">
                         {s.subscription ? (
                           <span className="px-3 py-1 bg-green-50 text-green-700 text-[10px] font-black uppercase tracking-widest rounded-full border border-green-100">
-                            {s.subscription.plan === 'math' ? 'МАТЕМАТИКА' : s.subscription.plan === 'english' ? 'АНГЛИЙСКИЙ' : s.subscription.plan === 'yearly' ? 'ГОД' : s.subscription.plan === 'monthly' ? 'МЕСЯЦ' : s.subscription.plan}
+                            {s.subscription.plan === 'yearly' ? 'ГОД' : s.subscription.plan === 'monthly' ? 'МЕСЯЦ' : getSubjectLabel(s.subscription.plan).toUpperCase()}
                           </span>
                         ) : (
                           <span className="px-3 py-1 bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-slate-100">
                             Нет
                           </span>
                         )}
-                        <select 
-                          onChange={(e) => handleGrantSubscription(s.id, e.target.value)}
-                          className="bg-slate-100 border-none rounded-none text-[8px] font-black uppercase px-2 py-1 outline-none cursor-pointer"
-                          value=""
-                        >
-                          <option value="" disabled>Выдать</option>
-                          <option value="math">Математика (Месяц)</option>
-                          <option value="english">Английский (Месяц)</option>
-                          <option value="monthly">Все предметы (Месяц)</option>
-                          <option value="yearly">Все предметы (Год)</option>
-                        </select>
+                        {grantingSingleSubjectId === s.id ? (
+                           <div className="flex items-center gap-1">
+                              <select 
+                                onChange={(e) => {
+                                  if (e.target.value) {
+                                     handleGrantSubscription(s.id, e.target.value);
+                                     setGrantingSingleSubjectId(null);
+                                  }
+                                }}
+                                className="bg-accent/10 border border-accent/20 rounded-none text-[8px] font-black uppercase px-2 py-1 outline-none cursor-pointer text-accent w-[100px]"
+                                value=""
+                              >
+                                <option value="" disabled>Предмет</option>
+                                {SUBJECTS.map(sub => (
+                                   <option key={sub.id} value={sub.id}>{sub.name} (Месяц)</option>
+                                ))}
+                              </select>
+                              <button onClick={() => setGrantingSingleSubjectId(null)} className="text-slate-400 hover:text-red-500">
+                                <XCircle size={14} />
+                              </button>
+                           </div>
+                        ) : (
+                          <select 
+                            onChange={(e) => {
+                               if (e.target.value === 'single') {
+                                  setGrantingSingleSubjectId(s.id);
+                               } else {
+                                  handleGrantSubscription(s.id, e.target.value);
+                               }
+                            }}
+                            className="bg-slate-100 border-none rounded-none text-[8px] font-black uppercase px-2 py-1 outline-none cursor-pointer w-[100px]"
+                            value=""
+                          >
+                            <option value="" disabled>Выдать</option>
+                            <option value="single">1 Предмет (Месяц)</option>
+                            <option value="monthly">Все предметы (Месяц)</option>
+                            <option value="yearly">Все предметы (Год)</option>
+                          </select>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex flex-col">
+                        {s.subscription?.start_date && s.subscription?.end_date ? (
+                          <>
+                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-tight">С: {new Date(s.subscription.start_date).toLocaleDateString()}</span>
+                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-tight">По: {new Date(s.subscription.end_date).toLocaleDateString()}</span>
+                          </>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">-</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-5">
