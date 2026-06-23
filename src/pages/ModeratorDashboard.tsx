@@ -22,6 +22,7 @@ import {
   PlayCircle,
   UserPlus,
   PhoneIncoming,
+  X
 } from "lucide-react";
 import api from "../api/client";
 import ScheduleEditor from "../components/ScheduleEditor";
@@ -38,6 +39,7 @@ export default function ModeratorDashboard() {
   const [groups, setGroups] = useState<any[]>([]);
   const [newGroupName, setNewGroupName] = useState("");
   const [selectedCurator, setSelectedCurator] = useState<string>("");
+  const [selectedGroupForStudents, setSelectedGroupForStudents] = useState<any>(null);
 
   const [consultations, setConsultations] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
@@ -198,6 +200,41 @@ export default function ModeratorDashboard() {
         "Ошибка при обновлении роли: " +
           (err?.response?.data?.error || err.message),
       );
+    }
+  };
+
+  const handleRemoveStudentFromGroup = async (groupId: string, studentId: string) => {
+    if (!window.confirm("Удалить ученика из группы?")) return;
+    try {
+      const group = groups.find(g => g.id === groupId);
+      if (!group) return;
+      const updatedStudents = (group.students || []).filter((id: string) => id !== studentId);
+      await updateDoc(doc(db, "groups", groupId), { students: updatedStudents });
+      
+      if (selectedGroupForStudents?.id === groupId) {
+        setSelectedGroupForStudents({ ...selectedGroupForStudents, students: updatedStudents });
+      }
+      
+      fetchData();
+    } catch (err) {
+      alert("Ошибка при удалении ученика");
+    }
+  };
+
+  const handleAddStudentToGroup = async (groupId: string, studentId: string) => {
+    try {
+      const group = groups.find(g => g.id === groupId);
+      if (!group) return;
+      const updatedStudents = [...(group.students || []), studentId];
+      await updateDoc(doc(db, "groups", groupId), { students: updatedStudents });
+      
+      if (selectedGroupForStudents?.id === groupId) {
+        setSelectedGroupForStudents({ ...selectedGroupForStudents, students: updatedStudents });
+      }
+      
+      fetchData();
+    } catch (err) {
+      alert("Ошибка при добавлении ученика");
     }
   };
 
@@ -724,7 +761,10 @@ export default function ModeratorDashboard() {
                         />
                       </div>
 
-                      <button className="w-full border-2 border-slate-200 text-slate-600 rounded-lg py-3 text-xs font-bold uppercase tracking-widest hover:border-primary hover:text-primary transition-colors">
+                      <button 
+                        onClick={() => setSelectedGroupForStudents(group)}
+                        className="w-full border-2 border-slate-200 text-slate-600 rounded-lg py-3 text-xs font-bold uppercase tracking-widest hover:border-primary hover:text-primary transition-colors"
+                      >
                         Состав учеников
                       </button>
                     </div>
@@ -743,6 +783,100 @@ export default function ModeratorDashboard() {
           </div>
         )}
       </div>
+      {selectedGroupForStudents && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-2xl">
+              <div>
+                <h2 className="text-xl font-black text-primary">Состав учеников</h2>
+                <p className="text-sm text-slate-500 font-medium mt-1">{selectedGroupForStudents.name}</p>
+              </div>
+              <button 
+                onClick={() => setSelectedGroupForStudents(null)}
+                className="p-2 hover:bg-slate-200 rounded-lg transition-colors text-slate-500 hover:text-slate-800"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-grow bg-slate-50/50">
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+                    <Users size={16} />
+                    В группе ({selectedGroupForStudents.students?.length || 0})
+                  </h3>
+                  {(!selectedGroupForStudents.students || selectedGroupForStudents.students.length === 0) ? (
+                    <div className="text-center py-8 bg-white rounded-xl border border-dashed border-slate-200 text-slate-400 text-sm font-medium">
+                      В группе пока нет учеников
+                    </div>
+                  ) : (
+                    <div className="grid gap-3">
+                      {selectedGroupForStudents.students.map((studentId: string) => {
+                        const student = usersList.find(u => u.id === studentId);
+                        return (
+                          <div key={studentId} className="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between shadow-sm">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-primary/10 text-primary rounded-lg flex items-center justify-center font-bold">
+                                {student?.name?.charAt(0) || student?.email?.charAt(0) || "?"}
+                              </div>
+                              <div>
+                                <div className="font-bold text-slate-800">{student?.name || "Без имени"}</div>
+                                <div className="text-xs text-slate-500">{student?.email || student?.phone || "Нет контакта"}</div>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleRemoveStudentFromGroup(selectedGroupForStudents.id, studentId)}
+                              className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                              title="Удалить из группы"
+                            >
+                              <XSquare size={20} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-6 border-t border-slate-200">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+                    <UserPlus size={16} />
+                    Добавить нераспределенных
+                  </h3>
+                  <div className="grid gap-3">
+                    {usersList.filter(u => u.role === "student" && !groups.some(g => g.students?.includes(u.id))).map(student => (
+                      <div key={student.id} className="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between shadow-sm opacity-75 hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-slate-100 text-slate-500 rounded-lg flex items-center justify-center font-bold">
+                            {student.name?.charAt(0) || student.email?.charAt(0) || "?"}
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-800">{student.name || "Без имени"}</div>
+                            <div className="text-xs text-slate-500">{student.email || student.phone || "Нет контакта"}</div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleAddStudentToGroup(selectedGroupForStudents.id, student.id)}
+                          className="text-primary hover:bg-primary/10 p-2 rounded-lg transition-colors"
+                          title="Добавить в группу"
+                        >
+                          <UserPlus size={20} />
+                        </button>
+                      </div>
+                    ))}
+                    {usersList.filter(u => u.role === "student" && !groups.some(g => g.students?.includes(u.id))).length === 0 && (
+                      <div className="text-center py-6 bg-white rounded-xl border border-dashed border-slate-200 text-slate-400 text-sm font-medium">
+                        Все ученики уже распределены
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
