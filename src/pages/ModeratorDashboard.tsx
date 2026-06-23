@@ -62,7 +62,7 @@ export default function ModeratorDashboard() {
         where("status", "==", "pending"),
       );
       const appsSnap = await getDocs(appsQuery);
-      const allApps = appsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const allApps = appsSnap.docs.map((d) => ({ id: d.id, ...d.data() } as any));
       setTeacherApps(allApps.filter(app => app.role_type !== 'curator'));
       setCuratorApps(allApps.filter(app => app.role_type === 'curator'));
 
@@ -92,16 +92,28 @@ export default function ModeratorDashboard() {
     }
   };
 
-  const handleApproveApp = async (id: string, email: string) => {
+  const handleApproveApp = async (app: any) => {
     try {
-      setTeacherApps(prev => prev.filter(app => app.id !== id));
-      setCuratorApps(prev => prev.filter(app => app.id !== id));
-      await updateDoc(doc(db, "teacher_applications", id), {
-        status: "pending_admin",
-      });
-      alert(
-        `Анкета переведена администратору. Можете связаться с кандидатом по: ${email}`,
-      );
+      if (app.role_type === "curator") {
+        setCuratorApps(prev => prev.filter(a => a.id !== app.id));
+        await updateDoc(doc(db, "teacher_applications", app.id), {
+          status: "approved",
+        });
+        if (app.user_id) {
+          await updateDoc(doc(db, "users", app.user_id), {
+            role: "curator",
+          });
+        }
+        alert("Заявка куратора принята! Роль обновлена.");
+      } else {
+        setTeacherApps(prev => prev.filter(a => a.id !== app.id));
+        await updateDoc(doc(db, "teacher_applications", app.id), {
+          status: "pending_admin",
+        });
+        alert(
+          `Анкета переведена администратору. Можете связаться с кандидатом по: ${app.email || app.phone}`,
+        );
+      }
     } catch (err) {
       alert("Ошибка!");
       fetchData(); // rollback
@@ -366,7 +378,7 @@ export default function ModeratorDashboard() {
 
                       <div className="flex gap-3 mt-auto">
                         <button
-                          onClick={() => handleApproveApp(app.id, app.email || app.phone)}
+                          onClick={() => handleApproveApp(app)}
                           className="flex-1 bg-primary text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-primary/90 transition-colors flex justify-center items-center gap-2 shadow-md shadow-primary/10"
                         >
                           <CheckSquare size={14} /> Пропуст.
@@ -426,7 +438,7 @@ export default function ModeratorDashboard() {
 
                       <div className="flex gap-3 mt-auto">
                         <button
-                          onClick={() => handleApproveApp(app.id, app.phone)}
+                          onClick={() => handleApproveApp(app)}
                           className="flex-1 bg-primary text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-primary/90 transition-colors flex justify-center items-center gap-2 shadow-md shadow-primary/10"
                         >
                           <CheckSquare size={14} /> Пропуст.
