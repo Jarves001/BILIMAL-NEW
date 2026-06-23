@@ -32,7 +32,8 @@ export default function ModeratorDashboard() {
     "requests",
   );
 
-  const [apps, setApps] = useState<any[]>([]);
+  const [teacherApps, setTeacherApps] = useState<any[]>([]);
+  const [curatorApps, setCuratorApps] = useState<any[]>([]);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
   const [newGroupName, setNewGroupName] = useState("");
@@ -61,7 +62,9 @@ export default function ModeratorDashboard() {
         where("status", "==", "pending"),
       );
       const appsSnap = await getDocs(appsQuery);
-      setApps(appsSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const allApps = appsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setTeacherApps(allApps.filter(app => app.role_type !== 'curator'));
+      setCuratorApps(allApps.filter(app => app.role_type === 'curator'));
 
       // 2. Fetch users
       const usersSnap = await getDocs(collection(db, "users"));
@@ -91,7 +94,8 @@ export default function ModeratorDashboard() {
 
   const handleApproveApp = async (id: string, email: string) => {
     try {
-      setApps(prev => prev.filter(app => app.id !== id));
+      setTeacherApps(prev => prev.filter(app => app.id !== id));
+      setCuratorApps(prev => prev.filter(app => app.id !== id));
       await updateDoc(doc(db, "teacher_applications", id), {
         status: "pending_admin",
       });
@@ -106,7 +110,8 @@ export default function ModeratorDashboard() {
 
   const handleRejectApp = async (id: string) => {
     try {
-      setApps(prev => prev.filter(app => app.id !== id));
+      setTeacherApps(prev => prev.filter(app => app.id !== id));
+      setCuratorApps(prev => prev.filter(app => app.id !== id));
       await updateDoc(doc(db, "teacher_applications", id), {
         status: "rejected",
       });
@@ -248,7 +253,7 @@ export default function ModeratorDashboard() {
           >
             Заявки{" "}
             <span className="ml-2 bg-primary text-white px-2 py-0.5 rounded-full text-[9px]">
-              {apps.length + consultations.length}
+              {teacherApps.length + curatorApps.length + consultations.length}
             </span>
           </button>
           <button
@@ -324,17 +329,17 @@ export default function ModeratorDashboard() {
               </div>
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {apps.map((app) => (
+                  {teacherApps.map((app) => (
                     <div
                       key={app.id}
                       className="bg-white border-2 border-slate-100 rounded-xl p-6 shadow-sm hover:border-slate-300 transition-colors flex flex-col h-full"
                     >
                       <div className="mb-4">
                         <h3 className="text-lg font-black text-primary mb-1 line-clamp-1">
-                          {app.fullName}
+                          {app.name || app.fullName || "Без имени"}
                         </h3>
                         <p className="text-xs text-slate-500 flex items-center gap-1">
-                          <Mail size={12} /> {app.email}
+                          <Mail size={12} /> {app.email || app.phone || "Нет контакта"}
                         </p>
                       </div>
 
@@ -343,25 +348,25 @@ export default function ModeratorDashboard() {
                           <span className="font-bold text-slate-400 text-[10px] uppercase tracking-wider block mb-1">
                             Предмет
                           </span>
-                          {app.subject}
+                          {app.subject || "Не указан"}
                         </div>
                         <div className="text-sm">
                           <span className="font-bold text-slate-400 text-[10px] uppercase tracking-wider block mb-1">
                             Опыт
                           </span>
-                          {app.experience} лет
+                          {app.experience ? `${app.experience} лет` : "Не указан"}
                         </div>
                         <div className="text-sm">
                           <span className="font-bold text-slate-400 text-[10px] uppercase tracking-wider block mb-1">
                             Образование
                           </span>
-                          <span className="line-clamp-2">{app.education}</span>
+                          <span className="line-clamp-2">{app.education || app.university || "Не указано"}</span>
                         </div>
                       </div>
 
                       <div className="flex gap-3 mt-auto">
                         <button
-                          onClick={() => handleApproveApp(app.id, app.email)}
+                          onClick={() => handleApproveApp(app.id, app.email || app.phone)}
                           className="flex-1 bg-primary text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-primary/90 transition-colors flex justify-center items-center gap-2 shadow-md shadow-primary/10"
                         >
                           <CheckSquare size={14} /> Пропуст.
@@ -375,7 +380,67 @@ export default function ModeratorDashboard() {
                       </div>
                     </div>
                   ))}
-                  {apps.length === 0 && (
+                  {teacherApps.length === 0 && (
+                    <div className="col-span-full py-12 text-center text-slate-400 text-xs font-bold uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">
+                      Нет новых анкет
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* Анкеты Кураторов */}
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="bg-slate-50 p-6 border-b border-slate-200 flex items-center gap-3">
+                <div className="bg-purple-100 p-2 rounded-lg text-purple-600">
+                  <UserPlus size={20} />
+                </div>
+                <h2 className="text-sm font-bold uppercase tracking-widest text-primary">
+                  Анкеты Кураторов
+                </h2>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {curatorApps.map((app) => (
+                    <div
+                      key={app.id}
+                      className="bg-white border-2 border-slate-100 rounded-xl p-6 shadow-sm hover:border-slate-300 transition-colors flex flex-col h-full"
+                    >
+                      <div className="mb-4">
+                        <h3 className="text-lg font-black text-primary mb-1 line-clamp-1">
+                          {app.name || "Без имени"}
+                        </h3>
+                        <p className="text-xs text-slate-500 flex items-center gap-1">
+                          <PhoneIncoming size={12} /> {app.phone || "Нет телефона"}
+                        </p>
+                      </div>
+
+                      <div className="space-y-3 mb-6 bg-slate-50 rounded-lg p-4 flex-grow">
+                        <div className="text-sm">
+                          <span className="font-bold text-slate-400 text-[10px] uppercase tracking-wider block mb-1">
+                            О себе
+                          </span>
+                          <span className="line-clamp-4">{app.about || "Не указано"}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3 mt-auto">
+                        <button
+                          onClick={() => handleApproveApp(app.id, app.phone)}
+                          className="flex-1 bg-primary text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-primary/90 transition-colors flex justify-center items-center gap-2 shadow-md shadow-primary/10"
+                        >
+                          <CheckSquare size={14} /> Пропуст.
+                        </button>
+                        <button
+                          onClick={() => handleRejectApp(app.id)}
+                          className="flex-1 bg-red-50 text-red-600 py-3 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-red-100 transition-colors flex justify-center items-center gap-2"
+                        >
+                          <XSquare size={14} /> Отклон.
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {curatorApps.length === 0 && (
                     <div className="col-span-full py-12 text-center text-slate-400 text-xs font-bold uppercase tracking-widest border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">
                       Нет новых анкет
                     </div>

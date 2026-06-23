@@ -16,11 +16,12 @@ interface User {
   id: string;
   name: string;
   email: string;
+  avatar_url?: string;
   role: 'admin' | 'teacher' | 'student' | 'curator' | 'moderator';
   subject?: string;
   subscription: 'active' | 'inactive';
   subInfo?: {
-    plan: 'basic' | 'test' | 'premium';
+    plan: string;
     end_date: string;
     exams_left: number;
     has_video_access: boolean;

@@ -40,7 +40,6 @@ export default function Register() {
       } else {
         setError('Ошибка при регистрации. Проверьте данные.');
       }
-      console.error(err);
     } finally {
       setIsLoading(false);
     }

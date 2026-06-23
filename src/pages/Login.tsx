@@ -19,7 +19,6 @@ export default function Login() {
       await loginEmail(email, password);
       navigate('/dashboard');
     } catch (err: any) {
-      console.error('Login error details:', err);
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('Неверный email или пароль');
       } else if (err.code === 'auth/invalid-email') {
