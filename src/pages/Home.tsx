@@ -33,7 +33,7 @@ export default function Home() {
               Ваш путь в <span className="text-accent italic drop-shadow-md">НИШ и БИЛ</span> начинается здесь
             </h1>
             <p className="text-xl text-gray-200 mb-10 max-w-2xl leading-relaxed drop-shadow-md font-medium">
-              Академическая платформа с реальными тестами, видеоуроками и глубоким анализом прогресса. Подготовьтесь к государственным экзаменам по профессиональным стандартам.
+              Академическая платформа с реальными тестами, видеоуроками и глубоким анализом прогресса. Подготовьтесь к НИШ и БИЛ по профессиональным стандартам.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 drop-shadow-lg">
               <Link to="/login" className="btn-primary !bg-accent !text-primary text-lg !px-8 !py-4 text-center border-2 border-accent hover:bg-accent/90">Начать подготовку</Link>
