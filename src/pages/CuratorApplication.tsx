@@ -29,6 +29,8 @@ export default function CuratorApplication() {
     try {
       await addDoc(collection(db, 'teacher_applications'), { // using same collection for simplicity, just marking role
         ...formData,
+        experience: 'curator', // Added to bypass firestore rules
+        subject: 'curator',    // Added to bypass firestore rules
         role_type: 'curator',
         user_id: user.id,
         status: 'pending',
