@@ -40,6 +40,7 @@ export default function ModeratorDashboard() {
   const [newGroupName, setNewGroupName] = useState("");
   const [selectedCurator, setSelectedCurator] = useState<string>("");
   const [selectedGroupForStudents, setSelectedGroupForStudents] = useState<any>(null);
+  const [viewingDocsApp, setViewingDocsApp] = useState<any>(null);
 
   const [consultations, setConsultations] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
@@ -133,6 +134,15 @@ export default function ModeratorDashboard() {
       alert("Ошибка!");
       fetchData(); // rollback
     }
+  };
+
+  const handleWhatsApp = (phone: string) => {
+    if (!phone) {
+      alert("Номер телефона не указан");
+      return;
+    }
+    const cleanPhone = phone.replace(/\D/g, "");
+    window.open(`https://wa.me/${cleanPhone}`, "_blank");
   };
 
   const createGroup = async () => {
@@ -413,19 +423,37 @@ export default function ModeratorDashboard() {
                         </div>
                       </div>
 
-                      <div className="flex gap-3 mt-auto">
+                      <div className="flex flex-col gap-2 mt-auto">
                         <button
-                          onClick={() => handleApproveApp(app)}
-                          className="flex-1 bg-primary text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-primary/90 transition-colors flex justify-center items-center gap-2 shadow-md shadow-primary/10"
+                          onClick={() => setViewingDocsApp(app)}
+                          className="w-full bg-slate-100 text-slate-700 py-3 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-slate-200 transition-colors flex justify-center items-center gap-2"
                         >
-                          <CheckSquare size={14} /> Пропуст.
+                          Подробнее / Документы
                         </button>
-                        <button
-                          onClick={() => handleRejectApp(app.id)}
-                          className="flex-1 bg-red-50 text-red-600 py-3 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-red-100 transition-colors flex justify-center items-center gap-2"
-                        >
-                          <XSquare size={14} /> Отклон.
-                        </button>
+                        
+                        {(app.phone || app.email) && (
+                          <button
+                            onClick={() => handleWhatsApp(app.phone || app.email)}
+                            className="w-full bg-[#25D366]/10 text-[#25D366] py-3 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-[#25D366]/20 transition-colors flex justify-center items-center gap-2"
+                          >
+                            Связаться в WhatsApp
+                          </button>
+                        )}
+                        
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleApproveApp(app)}
+                            className="flex-1 bg-primary text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-primary/90 transition-colors flex justify-center items-center gap-2 shadow-md shadow-primary/10"
+                          >
+                            <CheckSquare size={14} /> Пропуст.
+                          </button>
+                          <button
+                            onClick={() => handleRejectApp(app.id)}
+                            className="flex-1 bg-red-50 text-red-600 py-3 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-red-100 transition-colors flex justify-center items-center gap-2"
+                          >
+                            <XSquare size={14} /> Отклон.
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -459,9 +487,14 @@ export default function ModeratorDashboard() {
                         <h3 className="text-lg font-black text-primary mb-1 line-clamp-1">
                           {app.name || "Без имени"}
                         </h3>
-                        <p className="text-xs text-slate-500 flex items-center gap-1">
+                        <p className="text-xs text-slate-500 flex items-center gap-1 mb-1">
                           <PhoneIncoming size={12} /> {app.phone || "Нет телефона"}
                         </p>
+                        {app.email && (
+                          <p className="text-xs text-slate-500 flex items-center gap-1">
+                            <Mail size={12} /> {app.email}
+                          </p>
+                        )}
                       </div>
 
                       <div className="space-y-3 mb-6 bg-slate-50 rounded-lg p-4 flex-grow">
@@ -473,19 +506,37 @@ export default function ModeratorDashboard() {
                         </div>
                       </div>
 
-                      <div className="flex gap-3 mt-auto">
+                      <div className="flex flex-col gap-2 mt-auto">
                         <button
-                          onClick={() => handleApproveApp(app)}
-                          className="flex-1 bg-primary text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-primary/90 transition-colors flex justify-center items-center gap-2 shadow-md shadow-primary/10"
+                          onClick={() => setViewingDocsApp(app)}
+                          className="w-full bg-slate-100 text-slate-700 py-3 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-slate-200 transition-colors flex justify-center items-center gap-2"
                         >
-                          <CheckSquare size={14} /> Пропуст.
+                          Подробнее / Документы
                         </button>
-                        <button
-                          onClick={() => handleRejectApp(app.id)}
-                          className="flex-1 bg-red-50 text-red-600 py-3 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-red-100 transition-colors flex justify-center items-center gap-2"
-                        >
-                          <XSquare size={14} /> Отклон.
-                        </button>
+
+                        {(app.phone || app.email) && (
+                          <button
+                            onClick={() => handleWhatsApp(app.phone || app.email)}
+                            className="w-full bg-[#25D366]/10 text-[#25D366] py-3 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-[#25D366]/20 transition-colors flex justify-center items-center gap-2"
+                          >
+                            Связаться в WhatsApp
+                          </button>
+                        )}
+
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleApproveApp(app)}
+                            className="flex-1 bg-primary text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-primary/90 transition-colors flex justify-center items-center gap-2 shadow-md shadow-primary/10"
+                          >
+                            <CheckSquare size={14} /> Принять
+                          </button>
+                          <button
+                            onClick={() => handleRejectApp(app.id)}
+                            className="flex-1 bg-red-50 text-red-600 py-3 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-red-100 transition-colors flex justify-center items-center gap-2"
+                          >
+                            <XSquare size={14} /> Не принимать
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -873,6 +924,84 @@ export default function ModeratorDashboard() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {viewingDocsApp && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-2xl">
+              <div>
+                <h2 className="text-xl font-black text-primary">Подробная анкета</h2>
+                <p className="text-sm text-slate-500 font-medium mt-1">{viewingDocsApp.name || viewingDocsApp.fullName}</p>
+              </div>
+              <button 
+                onClick={() => setViewingDocsApp(null)}
+                className="p-2 hover:bg-slate-200 rounded-lg transition-colors text-slate-500 hover:text-slate-800"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-grow bg-slate-50/50 space-y-6">
+              {viewingDocsApp.photo_file && (
+                <div>
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-2">Фотография</h3>
+                  <img src={viewingDocsApp.photo_file} alt="Фото" className="w-32 h-32 object-cover rounded-xl border-4 border-white shadow-md" />
+                </div>
+              )}
+              
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-2">Основная информация</h3>
+                <div className="bg-white p-4 rounded-xl border border-slate-200 grid gap-3 text-sm">
+                  <div><span className="font-bold text-slate-400 w-32 inline-block">Опыт:</span> {viewingDocsApp.experience || "Не указан"}</div>
+                  <div><span className="font-bold text-slate-400 w-32 inline-block">Образование:</span> {viewingDocsApp.education || viewingDocsApp.university || "Не указано"}</div>
+                  <div><span className="font-bold text-slate-400 w-32 inline-block">Уровень (Degree):</span> {viewingDocsApp.education_level || "Не указан"}</div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-2">О себе</h3>
+                <div className="bg-white p-4 rounded-xl border border-slate-200 text-sm whitespace-pre-wrap">
+                  {viewingDocsApp.about || "Не указано"}
+                </div>
+              </div>
+
+              {(viewingDocsApp.resume_file || viewingDocsApp.diploma_file) && (
+                <div>
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-2">Документы</h3>
+                  <div className="grid gap-3">
+                    {viewingDocsApp.resume_file && (
+                      <div className="bg-white p-4 rounded-xl border border-slate-200">
+                        <div className="font-bold text-slate-800 mb-2">Резюме</div>
+                        <img src={viewingDocsApp.resume_file} alt="Резюме" className="w-full rounded border border-slate-100 max-h-96 object-contain" />
+                      </div>
+                    )}
+                    {viewingDocsApp.diploma_file && (
+                      <div className="bg-white p-4 rounded-xl border border-slate-200">
+                        <div className="font-bold text-slate-800 mb-2">Диплом</div>
+                        <img src={viewingDocsApp.diploma_file} alt="Диплом" className="w-full rounded border border-slate-100 max-h-96 object-contain" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-6 border-t border-slate-100 bg-white rounded-b-2xl flex gap-3">
+              <button
+                onClick={() => { handleApproveApp(viewingDocsApp); setViewingDocsApp(null); }}
+                className="flex-1 bg-primary text-white py-3 rounded-lg text-sm font-black uppercase tracking-wider hover:bg-primary/90 transition-colors flex justify-center items-center gap-2 shadow-md shadow-primary/10"
+              >
+                <CheckSquare size={16} /> {viewingDocsApp.role_type === "curator" ? "Принять" : "Пропуст."}
+              </button>
+              <button
+                onClick={() => { handleRejectApp(viewingDocsApp.id); setViewingDocsApp(null); }}
+                className="flex-1 bg-red-50 text-red-600 py-3 rounded-lg text-sm font-black uppercase tracking-wider hover:bg-red-100 transition-colors flex justify-center items-center gap-2"
+              >
+                <XSquare size={16} /> {viewingDocsApp.role_type === "curator" ? "Не принимать" : "Отклон."}
+              </button>
             </div>
           </div>
         </div>

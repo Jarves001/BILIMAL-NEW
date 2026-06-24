@@ -15,6 +15,7 @@ export default function CuratorApplication() {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     phone: '',
+    email: user?.email || '',
     about: '',
   });
 
@@ -85,6 +86,17 @@ export default function CuratorApplication() {
                 type="text" 
                 value={formData.name}
                 onChange={e => setFormData({...formData, name: e.target.value})}
+                className="w-full border-b-2 border-slate-200 py-2 focus:border-primary outline-none" 
+              />
+            </div>
+            
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Email</label>
+              <input 
+                required
+                type="email" 
+                value={formData.email}
+                onChange={e => setFormData({...formData, email: e.target.value})}
                 className="w-full border-b-2 border-slate-200 py-2 focus:border-primary outline-none" 
               />
             </div>
