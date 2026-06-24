@@ -975,13 +975,21 @@ export default function ModeratorDashboard() {
                     {viewingDocsApp.resume_file && (
                       <div className="bg-white p-4 rounded-xl border border-slate-200">
                         <div className="font-bold text-slate-800 mb-2">Резюме</div>
-                        <img src={viewingDocsApp.resume_file} alt="Резюме" className="w-full rounded border border-slate-100 max-h-96 object-contain" />
+                        {viewingDocsApp.resume_file.startsWith("data:application/pdf") ? (
+                          <iframe src={viewingDocsApp.resume_file} title="Резюме" className="w-full h-96 rounded border border-slate-100" />
+                        ) : (
+                          <img src={viewingDocsApp.resume_file} alt="Резюме" className="w-full rounded border border-slate-100 max-h-96 object-contain" />
+                        )}
                       </div>
                     )}
                     {viewingDocsApp.diploma_file && (
                       <div className="bg-white p-4 rounded-xl border border-slate-200">
                         <div className="font-bold text-slate-800 mb-2">Диплом</div>
-                        <img src={viewingDocsApp.diploma_file} alt="Диплом" className="w-full rounded border border-slate-100 max-h-96 object-contain" />
+                        {viewingDocsApp.diploma_file.startsWith("data:application/pdf") ? (
+                          <iframe src={viewingDocsApp.diploma_file} title="Диплом" className="w-full h-96 rounded border border-slate-100" />
+                        ) : (
+                          <img src={viewingDocsApp.diploma_file} alt="Диплом" className="w-full rounded border border-slate-100 max-h-96 object-contain" />
+                        )}
                       </div>
                     )}
                   </div>
