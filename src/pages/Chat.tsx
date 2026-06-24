@@ -43,6 +43,16 @@ export default function Chat() {
             },
             ...list
           ];
+        } else if (user.role === 'student') {
+          list = [
+            {
+              id: 'group_all_students',
+              name: '📣 Объявления курса (Zoom ссылки)',
+              role: 'группа',
+              isGroup: true
+            },
+            ...list
+          ];
         }
         
         setContacts(list);
@@ -213,21 +223,27 @@ export default function Chat() {
                </div>
                
                <div className="p-6 bg-white border-t">
-                 <form onSubmit={sendMessage} className="relative flex items-center">
-                    <input 
-                      value={newMessage}
-                      onChange={e => setNewMessage(e.target.value)}
-                      placeholder="Напишите сообщение, прикрепите ссылку на Zoom..."
-                      className="w-full bg-slate-100 rounded-2xl pl-6 pr-16 py-4 outline-none text-sm font-medium border-2 border-transparent focus:border-primary/20 focus:bg-white shadow-inner transition-all"
-                    />
-                    <button 
-                      type="submit" 
-                      disabled={!newMessage.trim()}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg hover:bg-primary/90 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 transition-all"
-                    >
-                       <Send size={18} className="translate-x-[-1px] translate-y-[1px]" />
-                    </button>
-                 </form>
+                 {selectedUser.isGroup && user?.role === 'student' ? (
+                   <div className="text-center text-slate-500 text-xs py-4 font-bold uppercase tracking-widest bg-slate-50 border rounded-xl">
+                     Только преподаватели могут писать в эту группу
+                   </div>
+                 ) : (
+                   <form onSubmit={sendMessage} className="relative flex items-center">
+                      <input 
+                        value={newMessage}
+                        onChange={e => setNewMessage(e.target.value)}
+                        placeholder="Напишите сообщение, прикрепите ссылку на Zoom..."
+                        className="w-full bg-slate-100 rounded-2xl pl-6 pr-16 py-4 outline-none text-sm font-medium border-2 border-transparent focus:border-primary/20 focus:bg-white shadow-inner transition-all"
+                      />
+                      <button 
+                        type="submit" 
+                        disabled={!newMessage.trim()}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg hover:bg-primary/90 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 transition-all"
+                      >
+                         <Send size={18} className="translate-x-[-1px] translate-y-[1px]" />
+                      </button>
+                   </form>
+                 )}
                </div>
              </>
            ) : (

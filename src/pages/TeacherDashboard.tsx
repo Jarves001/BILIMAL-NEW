@@ -1001,7 +1001,17 @@ export default function TeacherDashboard() {
                             <div className={`p-4 rounded-none max-w-[80%] shadow-sm ${
                               isMe ? 'bg-primary text-white rounded-tr-none' : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none'
                             }`}>
-                              <p className="text-sm leading-relaxed">{msg.text}</p>
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                                {msg.text.split(/(https?:\/\/[^\s]+)/g).map((part: string, i: number) => 
+                                  part.match(/(https?:\/\/[^\s]+)/g) ? (
+                                    <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80 transition-opacity break-all text-blue-300">
+                                      {part}
+                                    </a>
+                                  ) : (
+                                    <span key={i} className="break-words">{part}</span>
+                                  )
+                                )}
+                              </p>
                               <span className={`text-[9px] mt-2 block opacity-60 font-bold uppercase tracking-tighter ${isMe ? 'text-white' : 'text-slate-400'}`}>
                                 {msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Только что'}
                               </span>
